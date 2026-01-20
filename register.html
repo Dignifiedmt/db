@@ -947,128 +947,20 @@
     </button>
 
     <script src="app.js"></script>
+    
     <script>
-        // Wait for App to load
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Registration page loaded');
-            if (window.App && typeof App.init === 'function') {
-                console.log('Calling App.init()');
-                App.init();
-            } else {
-                console.error('App not loaded');
-                setTimeout(() => location.reload(), 1000);
-            }
-        });
-    </script>
+    // Wait for App to load
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Registration page loaded');
+        if (window.App && typeof App.init === 'function') {
+            console.log('Calling App.init()');
+            App.init();
+        } else {
+            console.error('App not loaded');
+            setTimeout(() => location.reload(), 1000);
+        }
+    });
+</script>
 </body>
-</html>not loaded');
-                setTimeout(() => location.reload(), 1000);
-            }
-        });
-    </script>
-</body>
-</html>                const sections = document.querySelectorAll('.form-section');
-                
-                // Set initial state
-                updateFormProgress('personal');
-                
-                // Add click handlers to steps
-                steps.forEach(step => {
-                    step.addEventListener('click', function() {
-                        const stepId = this.dataset.step;
-                        
-                        // Update steps
-                        steps.forEach(s => {
-                            s.classList.remove('active');
-                            s.classList.remove('completed');
-                        });
-                        
-                        this.classList.add('active');
-                        
-                        // Mark previous steps as completed
-                        const stepArray = Array.from(steps);
-                        const currentIndex = stepArray.indexOf(this);
-                        for (let i = 0; i < currentIndex; i++) {
-                            stepArray[i].classList.add('completed');
-                        }
-                        
-                        // Show corresponding section
-                        sections.forEach(section => {
-                            section.classList.remove('active');
-                        });
-                        
-                        const targetSection = document.getElementById(stepId + 'Tab');
-                        if (targetSection) {
-                            targetSection.classList.add('active');
-                        }
-                        
-                        // Update progress
-                        updateFormProgress(stepId);
-                        
-                        // Update button states
-                        const prevButtons = document.querySelectorAll('.prev-tab');
-                        const nextButtons = document.querySelectorAll('.next-tab');
-                        
-                        if (stepId === 'personal') {
-                            prevButtons.forEach(btn => btn.disabled = true);
-                        } else {
-                            prevButtons.forEach(btn => btn.disabled = false);
-                        }
-                        
-                        if (stepId === 'membership') {
-                            nextButtons.forEach(btn => btn.style.display = 'none');
-                        } else {
-                            nextButtons.forEach(btn => btn.style.display = 'inline-flex');
-                        }
-                    });
-                });
-                
-                // Next button handlers
-                document.querySelectorAll('.next-tab').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const currentSection = document.querySelector('.form-section.active');
-                        if (!currentSection) return;
-                        
-                        const currentStepId = currentSection.id.replace('Tab', '');
-                        const steps = ['personal', 'contact', 'membership'];
-                        const currentIndex = steps.indexOf(currentStepId);
-                        
-                        if (currentIndex < steps.length - 1) {
-                            const nextStep = steps[currentIndex + 1];
-                            const nextStepElement = document.querySelector(`.step[data-step="${nextStep}"]`);
-                            if (nextStepElement) {
-                                nextStepElement.click();
-                            }
-                        }
-                    });
-                });
-                
-                // Previous button handlers
-                document.querySelectorAll('.prev-tab').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const currentSection = document.querySelector('.form-section.active');
-                        if (!currentSection) return;
-                        
-                        const currentStepId = currentSection.id.replace('Tab', '');
-                        const steps = ['personal', 'contact', 'membership'];
-                        const currentIndex = steps.indexOf(currentStepId);
-                        
-                        if (currentIndex > 0) {
-                            const prevStep = steps[currentIndex - 1];
-                            const prevStepElement = document.querySelector(`.step[data-step="${prevStep}"]`);
-                            if (prevStepElement) {
-                                prevStepElement.click();
-                            }
-                        }
-                    });
-                });
-                
-                // Initialize App if available
-                if (window.App) {
-                    window.App.init();
-                }
-            }, 100);
-        });
-    </script>
-</body>
+
 </html>
