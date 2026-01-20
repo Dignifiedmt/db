@@ -1,5 +1,5 @@
 // app.js - COMPLETE FIXED FRONTEND FOR INTIZARUL IMAMUL MUNTAZAR
-// VERSION: 6.0.2 - FIXED TAB NAVIGATION SYSTEM
+// VERSION: 6.0.3 - FIXED TAB NAVIGATION & ZONE/Branch DROPDOWNS
 // LAST UPDATED: 2024
 
 const CONFIG = {
@@ -933,35 +933,61 @@ class App {
     });
   }
 
-  static populateZones(selectId, branchId) {
-    const zoneSel = document.getElementById(selectId);
-    const branchSel = document.getElementById(branchId);
+  // ============================================
+  // FIXED ZONE/BRANCH POPULATION FUNCTION
+  // ============================================
+  static populateZones(zoneSelectId, branchSelectId) {
+    console.log(`🌍 Setting up ${zoneSelectId} -> ${branchSelectId}`);
     
-    if (!zoneSel || !branchSel) return;
+    const zoneSelect = document.getElementById(zoneSelectId);
+    const branchSelect = document.getElementById(branchSelectId);
     
-    zoneSel.innerHTML = '<option value="">Select Zone</option>';
-    branchSel.innerHTML = '<option value="">Select Branch</option>';
+    if (!zoneSelect || !branchSelect) {
+      console.error(`❌ Elements not found: ${zoneSelectId} or ${branchSelectId}`);
+      return;
+    }
     
+    // Clear existing options
+    zoneSelect.innerHTML = '<option value="">Select Zone</option>';
+    branchSelect.innerHTML = '<option value="">Select Branch</option>';
+    
+    // Populate zones from ZONES object
     Object.keys(ZONES).forEach(zone => {
-      const opt = document.createElement('option');
-      opt.value = zone;
-      opt.textContent = zone;
-      zoneSel.appendChild(opt);
+      const option = document.createElement('option');
+      option.value = zone;
+      option.textContent = zone;
+      zoneSelect.appendChild(option);
     });
     
-    zoneSel.addEventListener('change', () => {
-      branchSel.innerHTML = '<option value="">Select Branch</option>';
+    console.log(`✅ Zones populated in ${zoneSelectId}: ${Object.keys(ZONES).length} zones`);
+    
+    // Event handler for zone change
+    zoneSelect.onchange = () => {
+      const selectedZone = zoneSelect.value;
+      console.log(`🌍 Zone selected: ${selectedZone}`);
       
-      const selectedZone = zoneSel.value;
+      // Clear branch dropdown
+      branchSelect.innerHTML = '<option value="">Select Branch</option>';
+      
+      // Populate branches for selected zone
       if (selectedZone && ZONES[selectedZone]) {
         ZONES[selectedZone].forEach(branch => {
-          const opt = document.createElement('option');
-          opt.value = branch;
-          opt.textContent = branch;
-          branchSel.appendChild(opt);
+          const option = document.createElement('option');
+          option.value = branch;
+          option.textContent = branch;
+          branchSelect.appendChild(option);
         });
+        
+        console.log(`✅ Populated ${ZONES[selectedZone].length} branches in ${branchSelectId}`);
+      } else {
+        console.log(`⚠️ No branches found for zone: ${selectedZone}`);
       }
-    });
+    };
+    
+    // Trigger change event to populate branches if zone is already selected
+    if (zoneSelect.value) {
+      zoneSelect.onchange();
+    }
   }
 
   static populateYears(selectId) {
@@ -1005,12 +1031,21 @@ class App {
             masulToggleContainer.style.display = 'block';
         }
         
-        // 3. Initialize form elements
+        // ✅✅✅ CRITICAL: Initialize dropdowns FIRST
+        console.log('Initializing dropdowns...');
+        
+        // Member form dropdowns
         this.populateZones('zone', 'branch');
         this.populateYears('recruitmentYear');
+        
+        // Mas'ul form dropdowns (even though hidden)
+        this.populateZones('masulZone', 'masulBranch');
+        this.populateYears('masulRecruitmentYear');
+        
+        // Setup photo upload
         this.setupPhoto('photoUpload', 'photoInput', 'photoPreview');
         
-        // 4. Set date limits
+        // Set date limits
         const today = new Date();
         const minDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
         const maxDate = new Date(today.getFullYear() - 8, today.getMonth(), today.getDate());
@@ -1028,32 +1063,28 @@ class App {
             masulBirthDate.setAttribute('max', maxDate.toISOString().split('T')[0]);
         }
         
-        // 5. Phone validation
+        // Phone validation
         document.querySelectorAll('input[type="tel"]').forEach(input => {
             input.addEventListener('input', function(e) {
                 this.value = this.value.replace(/[^0-9+]/g, '');
             });
         });
         
-        // ✅ CRITICAL: Setup tab switching with NO CONFLICTS
+        // ✅✅✅ CRITICAL: Setup tabs AFTER dropdowns
+        console.log('Setting up form tabs...');
         this.setupFormTabs();
         
-        // ✅ Member registration form
+        // Member form submission
         const memberForm = document.getElementById('memberRegistrationForm');
         if (memberForm) {
-            // Clear any existing listeners
-            const newForm = memberForm.cloneNode(true);
-            memberForm.parentNode.replaceChild(newForm, memberForm);
-            
-            // Attach new listener
-            document.getElementById('memberRegistrationForm').addEventListener('submit', async (e) => {
+            memberForm.addEventListener('submit', async e => {
                 e.preventDefault();
                 console.log('✅ Member form submitted');
-                await App.handleMemberRegistration();
+                await this.handleMemberRegistration();
             });
         }
         
-        // 6. Mas'ul registration toggle
+        // Mas'ul toggle
         const masulToggle = document.getElementById('masulToggle');
         if (masulToggle) {
             masulToggle.addEventListener('change', e => {
@@ -1075,15 +1106,14 @@ class App {
                     masulFormSection.style.display = showMasulForm ? 'block' : 'none';
                 }
                 
+                // Setup mas'ul photo upload if showing
                 if (showMasulForm) {
-                    this.populateZones('masulZone', 'masulBranch');
-                    this.populateYears('masulRecruitmentYear');
                     this.setupPhoto('masulPhotoUpload', 'masulPhotoInput', 'masulPhotoPreview');
                 }
             });
         }
         
-        // 7. Mas'ul registration form
+        // Mas'ul form submission
         const masulForm = document.getElementById('masulRegistrationForm');
         if (masulForm) {
             masulForm.addEventListener('submit', async e => {
@@ -1092,7 +1122,7 @@ class App {
             });
         }
         
-        // 8. Cancel Mas'ul form
+        // Cancel Mas'ul form
         const cancelMasulBtn = document.getElementById('cancelMasulForm');
         if (cancelMasulBtn) {
             cancelMasulBtn.addEventListener('click', () => {
@@ -1107,7 +1137,7 @@ class App {
         console.log('✅ Registration page setup complete');
     };
     
-    // Wait for DOM to be ready
+    // Wait for DOM
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initRegistration);
     } else {
@@ -1119,119 +1149,119 @@ class App {
   // FIXED TAB NAVIGATION SYSTEM - NO CONFLICTS
   // ============================================
   static setupFormTabs() {
-    console.log('🔧 Setting up form tabs...');
+    console.log('📋 Setting up form tabs...');
     
-    const formContainer = document.getElementById('memberFormSection');
-    if (!formContainer) {
-        console.log('No member form section found');
-        return;
-    }
-    
-    // Clear any existing event listeners by cloning
-    const oldForm = formContainer.cloneNode(true);
-    formContainer.parentNode.replaceChild(oldForm, formContainer);
-    
-    // Re-get elements after clone
-    const steps = document.querySelectorAll('.step');
-    const sections = document.querySelectorAll('.form-section');
-    
-    if (steps.length === 0 || sections.length === 0) {
-        console.error('Tab elements not found');
-        return;
-    }
-    
-    // Function to switch tabs - simple and direct
+    // Function to switch tabs
     const switchTab = (stepId) => {
-        console.log(`Switching to tab: ${stepId}`);
+      console.log(`Switching to tab: ${stepId}`);
+      
+      // Update steps
+      document.querySelectorAll('.step').forEach(step => {
+        step.classList.remove('active', 'completed');
+      });
+      
+      const activeStep = document.querySelector(`.step[data-step="${stepId}"]`);
+      if (activeStep) {
+        activeStep.classList.add('active');
         
-        // Update steps
-        steps.forEach(step => {
-            step.classList.remove('active');
-            step.classList.remove('completed');
-        });
-        
-        // Activate clicked step
-        const activeStep = document.querySelector(`.step[data-step="${stepId}"]`);
-        if (activeStep) {
-            activeStep.classList.add('active');
-            
-            // Mark previous steps as completed
-            const stepArray = Array.from(steps);
-            const currentIndex = stepArray.findIndex(s => s === activeStep);
-            for (let i = 0; i < currentIndex; i++) {
-                stepArray[i].classList.add('completed');
-            }
+        // Mark previous steps as completed
+        const steps = document.querySelectorAll('.step');
+        const stepArray = Array.from(steps);
+        const currentIndex = stepArray.findIndex(s => s === activeStep);
+        for (let i = 0; i < currentIndex; i++) {
+          stepArray[i].classList.add('completed');
         }
-        
-        // Show corresponding section
-        sections.forEach(section => {
-            section.classList.remove('active');
-        });
-        
-        const targetSection = document.getElementById(stepId + 'Tab');
-        if (targetSection) {
-            targetSection.classList.add('active');
-        }
-        
-        // Update progress
-        this.updateFormProgress(stepId);
-        
-        // Update button states
-        this.updateTabButtons(stepId);
+      }
+      
+      // Show corresponding section
+      document.querySelectorAll('.form-section').forEach(section => {
+        section.classList.remove('active');
+      });
+      
+      const targetSection = document.getElementById(stepId + 'Tab');
+      if (targetSection) {
+        targetSection.classList.add('active');
+      }
+      
+      // Update progress
+      this.updateFormProgress(stepId);
+      
+      // Update button states
+      this.updateTabButtons(stepId);
     };
     
-    // Simple click handlers for steps
-    steps.forEach(step => {
-        step.addEventListener('click', function(e) {
-            e.preventDefault();
-            const stepId = this.getAttribute('data-step');
-            switchTab(stepId);
-        });
+    // Step click handlers - SIMPLE
+    document.querySelectorAll('.step').forEach(step => {
+      // Remove existing listeners
+      const newStep = step.cloneNode(true);
+      step.parentNode.replaceChild(newStep, step);
     });
     
-    // Next button handlers
+    // Re-get elements after cloning
+    document.querySelectorAll('.step').forEach(step => {
+      step.addEventListener('click', () => {
+        const stepId = step.getAttribute('data-step');
+        switchTab(stepId);
+      });
+    });
+    
+    // Next button handlers - SIMPLE
     document.querySelectorAll('.next-tab').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            const currentSection = document.querySelector('.form-section.active');
-            if (!currentSection) return;
-            
-            const currentStepId = currentSection.id.replace('Tab', '');
-            const stepsOrder = ['personal', 'contact', 'membership'];
-            const currentIndex = stepsOrder.indexOf(currentStepId);
-            
-            if (currentIndex < stepsOrder.length - 1) {
-                const nextStep = stepsOrder[currentIndex + 1];
-                switchTab(nextStep);
-            }
-        });
+      // Remove existing listeners
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
     });
     
-    // Previous button handlers
+    // Re-get and attach
+    document.querySelectorAll('.next-tab').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        const currentSection = document.querySelector('.form-section.active');
+        if (!currentSection) return;
+        
+        const currentStepId = currentSection.id.replace('Tab', '');
+        const stepsOrder = ['personal', 'contact', 'membership'];
+        const currentIndex = stepsOrder.indexOf(currentStepId);
+        
+        if (currentIndex < stepsOrder.length - 1) {
+          const nextStep = stepsOrder[currentIndex + 1];
+          switchTab(nextStep);
+        }
+      });
+    });
+    
+    // Previous button handlers - SIMPLE
     document.querySelectorAll('.prev-tab').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            const currentSection = document.querySelector('.form-section.active');
-            if (!currentSection) return;
-            
-            const currentStepId = currentSection.id.replace('Tab', '');
-            const stepsOrder = ['personal', 'contact', 'membership'];
-            const currentIndex = stepsOrder.indexOf(currentStepId);
-            
-            if (currentIndex > 0) {
-                const prevStep = stepsOrder[currentIndex - 1];
-                switchTab(prevStep);
-            }
-        });
+      // Remove existing listeners
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+    });
+    
+    // Re-get and attach
+    document.querySelectorAll('.prev-tab').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        const currentSection = document.querySelector('.form-section.active');
+        if (!currentSection) return;
+        
+        const currentStepId = currentSection.id.replace('Tab', '');
+        const stepsOrder = ['personal', 'contact', 'membership'];
+        const currentIndex = stepsOrder.indexOf(currentStepId);
+        
+        if (currentIndex > 0) {
+          const prevStep = stepsOrder[currentIndex - 1];
+          switchTab(prevStep);
+        }
+      });
     });
     
     // Initialize with first tab
-    const firstStep = steps[0];
+    const firstStep = document.querySelector('.step');
     if (firstStep) {
-        const firstStepId = firstStep.getAttribute('data-step');
-        switchTab(firstStepId);
+      const firstStepId = firstStep.getAttribute('data-step');
+      switchTab(firstStepId);
     }
     
     console.log('✅ Form tabs setup complete');
@@ -1720,32 +1750,56 @@ class App {
   }
 
   // ============================================
-  // DEBUG FUNCTION FOR TABS
+  // DEBUG FUNCTION FOR REGISTRATION PAGE
   // ============================================
-  static debugTabs() {
-    console.log('=== 🔍 DEBUG TABS ===');
+  static debugRegistrationPage() {
+    console.log('=== 🔍 DEBUG REGISTRATION PAGE ===');
     
-    // Check if elements exist
-    console.log('Steps found:', document.querySelectorAll('.step').length);
-    console.log('Sections found:', document.querySelectorAll('.form-section').length);
-    console.log('Next buttons:', document.querySelectorAll('.next-tab').length);
-    console.log('Prev buttons:', document.querySelectorAll('.prev-tab').length);
+    // Check zone dropdowns
+    const zone = document.getElementById('zone');
+    const branch = document.getElementById('branch');
+    const masulZone = document.getElementById('masulZone');
+    const masulBranch = document.getElementById('masulBranch');
     
-    // Check current active tab
-    const activeSection = document.querySelector('.form-section.active');
-    console.log('Active section:', activeSection ? activeSection.id : 'None');
+    console.log('Zone select found:', !!zone);
+    console.log('Branch select found:', !!branch);
+    console.log('Masul Zone select found:', !!masulZone);
+    console.log('Masul Branch select found:', !!masulBranch);
     
-    // Test tab click manually
-    const firstStep = document.querySelector('.step');
-    if (firstStep) {
-        console.log('First step data:', firstStep.getAttribute('data-step'));
-        
-        // Simulate click
-        firstStep.click();
-        console.log('Clicked first step');
+    if (zone) {
+      console.log(`Zone options: ${zone.options.length}`);
+      console.log('Zone value:', zone.value);
+      console.log('Zone options:', Array.from(zone.options).map(opt => opt.value));
     }
     
-    alert('Check console (F12) for tab debug info');
+    if (branch) {
+      console.log(`Branch options: ${branch.options.length}`);
+      console.log('Branch value:', branch.value);
+    }
+    
+    // Check tabs
+    const steps = document.querySelectorAll('.step');
+    const sections = document.querySelectorAll('.form-section');
+    console.log(`Steps found: ${steps.length}`);
+    console.log(`Sections found: ${sections.length}`);
+    
+    // Check ZONES object
+    console.log('ZONES object:', ZONES);
+    console.log('Number of zones:', Object.keys(ZONES).length);
+    
+    // Test zone population
+    if (zone && zone.options.length <= 1) {
+      console.log('⚠️ Zone dropdown empty, populating...');
+      this.populateZones('zone', 'branch');
+    }
+    
+    // Test tab switching
+    const firstStep = document.querySelector('.step');
+    if (firstStep) {
+      console.log('First step data-step:', firstStep.getAttribute('data-step'));
+    }
+    
+    alert('Check console (F12) for registration page debug info');
   }
 
   // ============================================
@@ -2863,4 +2917,4 @@ setTimeout(() => {
 
 // Make App available globally
 window.App = App;
-console.log('✅ App.js loaded successfully with FIXED TAB NAVIGATION SYSTEM!');
+console.log('✅ App.js loaded successfully with FIXED TAB NAVIGATION & ZONE/BRANCH DROPDOWNS!');
