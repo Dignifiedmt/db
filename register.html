@@ -954,12 +954,12 @@
         </div>
     </main>
 
-    <!-- Debug button (remove after fixing) -->
-    <button onclick="App.debugTabs()" style="
+    <!-- Debug buttons -->
+    <button onclick="App.debugRegistrationPage()" style="
         position: fixed;
         bottom: 20px;
         right: 20px;
-        background: #ff9800;
+        background: #17a2b8;
         color: white;
         border: none;
         padding: 10px 15px;
@@ -968,7 +968,23 @@
         z-index: 10000;
         font-weight: bold;
     ">
-        🐛 Debug Tabs
+        🔍 Debug Page
+    </button>
+
+    <button onclick="console.log('Zone select:', document.getElementById('zone'), 'Branch select:', document.getElementById('branch'))" style="
+        position: fixed;
+        bottom: 60px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        z-index: 10000;
+        font-weight: bold;
+    ">
+        🎯 Check Elements
     </button>
 
     <!-- SIMPLE INITIALIZATION - DO NOT ADD ANYTHING ELSE HERE -->
