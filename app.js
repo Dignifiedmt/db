@@ -1,5 +1,5 @@
 // app.js - COMPLETE FIXED FRONTEND FOR INTIZARUL IMAMUL MUNTAZAR
-// VERSION: 6.0.0 - ALL FIXES APPLIED WITH WORKING REGISTRATION
+// VERSION: 6.0.0 - ALL FIXES APPLIED - NO CONFLICTS
 // LAST UPDATED: 2024
 
 const CONFIG = {
@@ -328,27 +328,22 @@ class App {
       return '';
     }
     
-    // If already a thumbnail URL, return as-is
     if (url.includes('thumbnail')) {
       return url;
     }
     
-    // Extract file ID from various Google Drive URL formats
     let fileId = '';
     
-    // Pattern 1: /uc?id=FILE_ID
     const ucMatch = url.match(/[?&]id=([^&]+)/);
     if (ucMatch) {
       fileId = ucMatch[1];
     }
-    // Pattern 2: /d/FILE_ID/
     else if (url.includes('/d/')) {
       const dMatch = url.match(/\/d\/([^\/]+)/);
       if (dMatch) {
         fileId = dMatch[1];
       }
     }
-    // Pattern 3: /file/d/FILE_ID/
     else if (url.includes('/file/d/')) {
       const fileMatch = url.match(/\/file\/d\/([^\/]+)/);
       if (fileMatch) {
@@ -357,11 +352,9 @@ class App {
     }
     
     if (fileId) {
-      // Return thumbnail URL for proper image display
       return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
     }
     
-    // If not a Drive URL or pattern not matched, return original
     return url;
   }
 
@@ -580,7 +573,6 @@ class App {
   }
 
   static setupGlobalEvents() {
-    // Password toggle
     document.addEventListener('click', (e) => {
       if (e.target.closest('.password-toggle')) {
         const btn = e.target.closest('.password-toggle');
@@ -602,7 +594,6 @@ class App {
       }
     });
     
-    // Form validation
     document.addEventListener('blur', (e) => {
       if (e.target.matches('input[required], select[required], textarea[required]')) {
         this.validateField(e.target);
@@ -694,20 +685,17 @@ class App {
   static setupLogin() {
     console.log('🔧 Setting up login page...');
     
-    // Set current year
     const currentYear = document.getElementById('currentYear');
     if (currentYear) {
       currentYear.textContent = new Date().getFullYear();
     }
     
-    // Clear URL parameters to prevent conflicts
     if (window.location.search) {
       const url = new URL(window.location);
       url.search = '';
       window.history.replaceState({}, document.title, url.toString());
     }
     
-    // Initialize role buttons
     const roleButtons = document.querySelectorAll('.role-btn');
     if (roleButtons.length === 0) {
       console.error('Role buttons not found');
@@ -718,10 +706,7 @@ class App {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         
-        // Remove active class from all buttons
         roleButtons.forEach(b => b.classList.remove('active'));
-        
-        // Add active class to clicked button
         btn.classList.add('active');
         
         const role = btn.dataset.role;
@@ -738,7 +723,6 @@ class App {
             branchGroup.style.display = 'block';
             branchSelect.required = true;
             
-            // Populate branches if needed
             if (branchSelect.options.length <= 1) {
               this.populateBranches('branchSelect');
             }
@@ -749,7 +733,6 @@ class App {
           }
         }
         
-        // Set focus to access code field
         setTimeout(() => {
           const accessCodeInput = document.getElementById('accessCode');
           if (accessCodeInput) {
@@ -759,7 +742,6 @@ class App {
       });
     });
     
-    // Set initial role based on URL parameter or default
     const urlParams = new URLSearchParams(location.search);
     const roleParam = urlParams.get('role');
     
@@ -775,10 +757,8 @@ class App {
       }
     }
     
-    // Populate branches
     this.populateBranches('branchSelect');
     
-    // Add input validation
     const accessCodeInput = document.getElementById('accessCode');
     const branchSelect = document.getElementById('branchSelect');
     
@@ -790,7 +770,6 @@ class App {
       branchSelect.addEventListener('change', () => this.validateField(branchSelect));
     }
     
-    // Login form submission
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
       loginForm.addEventListener('submit', async e => {
@@ -798,7 +777,6 @@ class App {
         
         console.log('📝 Login form submitted');
         
-        // Clear previous errors
         this.clearLoginErrors();
         
         const activeBtn = document.querySelector('.role-btn.active');
@@ -814,7 +792,6 @@ class App {
         
         console.log(`Login attempt - Role: ${role}, Branch: ${branch}, Code: ${code}`);
         
-        // Validation
         let isValid = true;
         
         if (!code) {
@@ -834,7 +811,6 @@ class App {
           return;
         }
         
-        // Show loading
         this.showLoginLoading(true);
         
         try {
@@ -847,7 +823,6 @@ class App {
           
           console.log('✅ Login successful:', res);
           
-          // Store login data
           localStorage.setItem('isLoggedIn', 'true');
           localStorage.setItem('userRole', role);
           localStorage.setItem('userBranch', branch || '');
@@ -864,7 +839,6 @@ class App {
           console.error('❌ Login failed:', err);
           this.showLoginLoading(false);
           
-          // Specific error messages
           let errorMsg = 'Login failed. Please try again.';
           if (err.message.includes('Invalid admin access code') || 
               err.message.includes('Invalid masul access code')) {
@@ -892,7 +866,6 @@ class App {
       });
     }
     
-    // Auto-focus access code field
     setTimeout(() => {
       const accessCodeInput = document.getElementById('accessCode');
       if (accessCodeInput) {
@@ -900,7 +873,6 @@ class App {
       }
     }, 500);
     
-    // Check backend status
     setTimeout(() => {
       this.checkBackendStatus();
     }, 1000);
@@ -962,12 +934,10 @@ class App {
   }
 
   static clearLoginErrors() {
-    // Clear invalid marks from all fields
     document.querySelectorAll('.form-control.invalid').forEach(input => {
       input.classList.remove('invalid');
     });
     
-    // Hide validation messages
     document.querySelectorAll('.validation-message').forEach(msg => {
       msg.style.display = 'none';
     });
@@ -979,7 +949,6 @@ class App {
     element.classList.add('invalid');
     element.focus();
     
-    // Create or update validation message
     let msgElement = element.nextElementSibling;
     if (!msgElement || !msgElement.classList.contains('validation-message')) {
       msgElement = document.createElement('div');
@@ -995,7 +964,6 @@ class App {
     const select = document.getElementById(selectId);
     if (!select) return;
     
-    // Only populate if empty or has only default option
     if (select.options.length > 1) return;
     
     select.innerHTML = '<option value="">-- Please select your branch --</option>';
@@ -1062,7 +1030,7 @@ class App {
   }
 
   // ============================================
-  // FIXED REGISTRATION PAGE - COMPLETELY REWRITTEN
+  // FIXED REGISTRATION PAGE - COMPLETE REWRITE
   // ============================================
   static setupRegister() {
     console.log('🔧 Setting up registration page...');
@@ -1121,32 +1089,20 @@ class App {
       this.setupFormTabs();
       
       // ✅✅✅ CRITICAL FIX 2: Member registration form
-      const setupMemberForm = () => {
-        const memberForm = document.getElementById('memberRegistrationForm');
-        console.log('Looking for member form:', memberForm);
+      const memberForm = document.getElementById('memberRegistrationForm');
+      if (memberForm) {
+        // Remove any existing event listeners
+        const newForm = memberForm.cloneNode(true);
+        memberForm.parentNode.replaceChild(newForm, memberForm);
         
-        if (!memberForm) {
-          console.error('Member form not found, retrying...');
-          setTimeout(setupMemberForm, 100);
-          return;
-        }
-        
-        // Remove existing listener if any
-        const oldForm = memberForm.cloneNode(true);
-        memberForm.parentNode.replaceChild(oldForm, memberForm);
-        
-        // Attach new listener
+        // Reattach event listener
         document.getElementById('memberRegistrationForm').addEventListener('submit', async (e) => {
           e.preventDefault();
           e.stopPropagation();
           console.log('✅ Member form SUBMITTED!');
-          await App.handleMemberRegistration();
+          await this.handleMemberRegistration();
         });
-        
-        console.log('✅ Member form event listener attached');
-      };
-      
-      setupMemberForm();
+      }
       
       // 6. Mas'ul registration toggle
       const masulToggle = document.getElementById('masulToggle');
@@ -1214,9 +1170,14 @@ class App {
     const steps = document.querySelectorAll('.step');
     const sections = document.querySelectorAll('.form-section');
     
-    // Function to switch tabs
+    if (steps.length === 0) {
+      console.error('No steps found');
+      return;
+    }
+    
     const switchTab = (stepId) => {
-      // Update steps
+      console.log(`Switching to tab: ${stepId}`);
+      
       steps.forEach(step => {
         step.classList.remove('active');
         step.classList.remove('completed');
@@ -1226,7 +1187,6 @@ class App {
       if (activeStep) {
         activeStep.classList.add('active');
         
-        // Mark previous steps as completed
         const stepArray = Array.from(steps);
         const currentIndex = stepArray.findIndex(s => s === activeStep);
         for (let i = 0; i < currentIndex; i++) {
@@ -1234,7 +1194,6 @@ class App {
         }
       }
       
-      // Show corresponding section
       sections.forEach(section => {
         section.classList.remove('active');
       });
@@ -1244,10 +1203,8 @@ class App {
         targetSection.classList.add('active');
       }
       
-      // Update progress bar
       this.updateFormProgress(stepId);
       
-      // Update button states
       const prevButtons = document.querySelectorAll('.prev-tab');
       const nextButtons = document.querySelectorAll('.next-tab');
       
@@ -1264,7 +1221,6 @@ class App {
       }
     };
     
-    // Add click handlers to steps
     steps.forEach(step => {
       step.addEventListener('click', function() {
         const stepId = this.dataset.step;
@@ -1272,7 +1228,6 @@ class App {
       });
     });
     
-    // Next button handlers
     document.querySelectorAll('.next-tab').forEach(btn => {
       btn.addEventListener('click', function() {
         const currentSection = document.querySelector('.form-section.active');
@@ -1289,7 +1244,6 @@ class App {
       });
     });
     
-    // Previous button handlers
     document.querySelectorAll('.prev-tab').forEach(btn => {
       btn.addEventListener('click', function() {
         const currentSection = document.querySelector('.form-section.active');
@@ -1306,7 +1260,6 @@ class App {
       });
     });
     
-    // Initialize with first tab
     if (steps.length > 0) {
       const firstStep = steps[0];
       switchTab(firstStep.dataset.step);
@@ -1396,7 +1349,6 @@ class App {
     
     area.addEventListener('click', () => input.click());
     
-    // Drag and drop events
     ['dragover', 'dragenter'].forEach(event => {
       area.addEventListener(event, (e) => {
         e.preventDefault();
@@ -1444,7 +1396,6 @@ class App {
         preview.classList.add('show');
         input.dataset.base64 = base64;
         
-        // Show remove button
         const removeBtn = preview.nextElementSibling;
         if (removeBtn && removeBtn.classList.contains('photo-remove')) {
           removeBtn.style.display = 'flex';
@@ -1473,10 +1424,8 @@ class App {
     console.log('🔴 DEBUG: handleMemberRegistration called');
     
     try {
-      // Show loading
       this.loading(true, 'Registering member...');
       
-      // Validate all required fields first
       const requiredFields = [
         'fullName', 'firstName', 'fatherName', 'birthDate', 'gender',
         'residentialAddress', 'phone1', 'memberLevel', 'zone', 'branch',
@@ -1486,14 +1435,13 @@ class App {
       let isValid = true;
       let errorMessage = '';
       
-      // Collect all errors
       requiredFields.forEach(field => {
         const element = document.getElementById(field);
         const value = element ? element.value.trim() : '';
         
         if (!value) {
           isValid = false;
-          element.classList.add('invalid');
+          if (element) element.classList.add('invalid');
           const fieldName = field.replace(/([A-Z])/g, ' $1').toLowerCase();
           errorMessage += `• ${fieldName} is required\n`;
         } else {
@@ -1501,14 +1449,12 @@ class App {
         }
       });
       
-      // If invalid, show alert and return
       if (!isValid) {
         alert('Please fix the following errors:\n\n' + errorMessage);
         this.loading(false);
         return;
       }
       
-      // Validate date
       const birthDate = new Date(document.getElementById('birthDate').value);
       const today = new Date();
       const minAge = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
@@ -1520,7 +1466,6 @@ class App {
         return;
       }
       
-      // Prepare data
       const photoInput = document.getElementById('photoInput');
       
       const formData = {
@@ -1550,10 +1495,8 @@ class App {
       
       console.log('Sending registration data:', formData);
       
-      // Call API
       const res = await this.api('registerMember', formData);
       
-      // Show success
       alert('✅ Member registered successfully!\n\n' +
             `Global ID: ${res.data.globalId}\n` +
             `Recruitment ID: ${res.data.recruitmentId}\n` +
@@ -1566,7 +1509,6 @@ class App {
     } catch (err) {
       console.error('Registration error:', err);
       
-      // Show detailed error alert
       let userMessage = 'Registration failed. ';
       
       if (err.message.includes('Member already registered')) {
@@ -1597,19 +1539,29 @@ class App {
     ];
     
     let isValid = true;
+    let errorMessage = '';
+    
     requiredFields.forEach(field => {
       const element = document.getElementById(field);
-      if (element && !element.value.trim()) {
-        element.classList.add('invalid');
+      const value = element ? element.value.trim() : '';
+      
+      if (!value) {
         isValid = false;
-        this.error(`Please fill in ${field.replace('masul', '').replace(/([A-Z])/g, ' $1').toLowerCase()}`);
+        if (element) element.classList.add('invalid');
+        const fieldName = field.replace('masul', '').replace(/([A-Z])/g, ' $1').toLowerCase();
+        errorMessage += `• ${fieldName} is required\n`;
+      } else {
+        if (element) element.classList.remove('invalid');
       }
     });
     
-    if (!isValid) return;
+    if (!document.getElementById('masulDeclaration')?.checked) {
+      errorMessage += '• Please accept the declaration\n';
+      isValid = false;
+    }
     
-    if (!document.getElementById('masulDeclaration').checked) {
-      this.error('Please accept the declaration');
+    if (!isValid) {
+      alert('Please fix the following errors:\n\n' + errorMessage);
       return;
     }
     
@@ -1641,6 +1593,7 @@ class App {
       this.success('Mas\'ul registered successfully!');
     } catch (err) {
       console.error('Masul registration error:', err);
+      alert('❌ Mas\'ul registration failed: ' + (err.message || 'Unknown error'));
     } finally {
       this.loading(false);
     }
@@ -1655,7 +1608,6 @@ class App {
     if (successMessage) successMessage.style.display = 'block';
     if (loadingState) loadingState.style.display = 'none';
     
-    // Populate ID card
     const elements = {
       'printFullName': data.fullName || 'N/A',
       'printGlobalId': data.globalId || 'N/A',
@@ -1675,7 +1627,6 @@ class App {
       if (el) el.textContent = value;
     });
     
-    // Photo
     if (data.photoUrl) {
       const photoEl = document.getElementById('printPhoto');
       const placeholderEl = document.getElementById('photoPlaceholder');
@@ -1707,21 +1658,18 @@ class App {
       }
     }
     
-    // Register another button
     const registerAnotherBtn = document.getElementById('registerAnother');
     if (registerAnotherBtn) {
       registerAnotherBtn.onclick = () => {
         if (successMessage) successMessage.style.display = 'none';
         if (formContainer) formContainer.style.display = 'block';
         
-        // Reset forms
         const memberForm = document.getElementById('memberRegistrationForm');
         const masulForm = document.getElementById('masulRegistrationForm');
         
         if (memberForm) memberForm.reset();
         if (masulForm) masulForm.reset();
         
-        // Reset photos
         const photoPreview = document.getElementById('photoPreview');
         const masulPhotoPreview = document.getElementById('masulPhotoPreview');
         const photoInput = document.getElementById('photoInput');
@@ -1744,7 +1692,6 @@ class App {
           masulPhotoInput.dataset.base64 = '';
         }
         
-        // Reset to first tab
         const firstStep = document.querySelector('.step[data-step="personal"]');
         if (firstStep) {
           firstStep.click();
@@ -1754,14 +1701,11 @@ class App {
   }
 
   static printIdCard() {
-    // Add print class for specific styling
     document.body.classList.add('printing');
     
-    // Wait a moment for styles to apply, then print
     setTimeout(() => {
       window.print();
       
-      // Remove print class after printing
       setTimeout(() => {
         document.body.classList.remove('printing');
       }, 1000);
@@ -1774,27 +1718,18 @@ class App {
   static debugRegistration() {
     console.log('=== 🐛 DEBUG REGISTRATION ===');
     
-    // Check form
     const form = document.getElementById('memberRegistrationForm');
     console.log('Form exists:', !!form);
     
-    if (form) {
-      const listeners = getEventListeners ? getEventListeners(form) : 'No getEventListeners';
-      console.log('Form event listeners:', listeners);
-    }
-    
-    // Check tabs
     console.log('Tabs:', document.querySelectorAll('.step').length);
     console.log('Tab sections:', document.querySelectorAll('.form-section').length);
     
-    // Check required fields
     const requiredFields = ['fullName', 'zone', 'branch'];
     requiredFields.forEach(field => {
       const el = document.getElementById(field);
       console.log(`${field}:`, el ? `value="${el.value}"` : 'NOT FOUND');
     });
     
-    // Test tab click
     const secondTab = document.querySelector('.step[data-step="contact"]');
     if (secondTab) {
       console.log('Clicking second tab...');
@@ -1805,32 +1740,18 @@ class App {
   }
 
   // ============================================
-  // FIXED DASHBOARD FUNCTIONS
+  // DASHBOARD FUNCTIONS (Simplified for clarity)
   // ============================================
   static setupDashboard() {
     console.log('Setting up dashboard...');
     
-    // Wait for DOM to be ready
     setTimeout(() => {
-      // Setup hamburger menu
       this.setupHamburgerMenu();
-      
-      // Setup menu navigation
       this.setupMenuNavigation();
-      
-      // Initialize filters
       this.populateZones('zoneFilter', 'branchFilter');
-      
-      // Setup filter events
       this.setupFilterEvents();
-      
-      // Setup settings form
       this.setupSettingsForm();
-      
-      // Setup export buttons
       this.setupExportButtons();
-      
-      // Load initial data
       this.loadOverview();
       
       console.log('✅ Dashboard setup complete');
@@ -1842,7 +1763,6 @@ class App {
     const sidebar = document.getElementById('sidebar');
     const sidebarClose = document.getElementById('sidebarClose');
     const mobileOverlay = document.querySelector('.overlay');
-    const mainContent = document.querySelector('.main-content');
     
     if (menuToggle && sidebar) {
       menuToggle.addEventListener('click', (e) => {
@@ -1880,21 +1800,6 @@ class App {
         mobileOverlay.classList.remove('active');
       });
     }
-    
-    // Close sidebar when clicking outside on mobile
-    document.addEventListener('click', (e) => {
-      if (window.innerWidth <= 992 && sidebar && sidebar.classList.contains('collapsed')) {
-        const isClickInsideSidebar = sidebar.contains(e.target);
-        const isClickOnMenuToggle = menuToggle && menuToggle.contains(e.target);
-        
-        if (!isClickInsideSidebar && !isClickOnMenuToggle) {
-          sidebar.classList.remove('collapsed');
-          if (mobileOverlay) {
-            mobileOverlay.classList.remove('active');
-          }
-        }
-      }
-    });
   }
 
   static setupMenuNavigation() {
@@ -1909,29 +1814,24 @@ class App {
         const section = item.dataset.section;
         if (!section) return;
         
-        // Update active menu item
         menuItems.forEach(i => i.classList.remove('active'));
         item.classList.add('active');
         
-        // Show corresponding section
         dashboardSections.forEach(s => s.classList.remove('active'));
         const targetSection = document.getElementById(section + 'Section');
         if (targetSection) {
           targetSection.classList.add('active');
         }
         
-        // Update page title
         if (pageTitle) {
           pageTitle.textContent = item.textContent.trim();
         }
         
-        // Load section data
         const methodName = `load${section.charAt(0).toUpperCase() + section.slice(1)}`;
         if (this[methodName] && typeof this[methodName] === 'function') {
           this[methodName]();
         }
         
-        // Close sidebar on mobile after selection
         if (window.innerWidth < 992) {
           const sidebar = document.getElementById('sidebar');
           const mobileOverlay = document.querySelector('.overlay');
@@ -2031,7 +1931,6 @@ class App {
       const res = await this.api('getStatistics');
       const stats = res.data || {};
       
-      // Update stats grid
       const statsGrid = document.getElementById('statsGrid');
       if (statsGrid) {
         statsGrid.innerHTML = `
@@ -2062,18 +1961,15 @@ class App {
         `;
       }
       
-      // Update counts in menu
       const membersCount = document.getElementById('membersCount');
       const masulCount = document.getElementById('masulCount');
       
       if (membersCount) membersCount.textContent = stats.totalMembers || 0;
       if (masulCount) masulCount.textContent = stats.totalMasul || 0;
       
-      // Create charts
       this.createZoneChart(stats.membersPerBranch || {});
       this.createLevelChart(stats.membersPerLevel || {});
       
-      // Load recent activity
       await this.loadRecentActivity();
       
     } catch (error) {
@@ -2088,7 +1984,6 @@ class App {
     const ctx = document.getElementById('zoneChart');
     if (!ctx) return;
     
-    // Destroy existing chart
     if (ctx.chart) {
       ctx.chart.destroy();
     }
@@ -2124,7 +2019,6 @@ class App {
     const ctx = document.getElementById('levelChart');
     if (!ctx) return;
     
-    // Destroy existing chart
     if (ctx.chart) {
       ctx.chart.destroy();
     }
@@ -2222,9 +2116,7 @@ class App {
             </tr>
           `;
         } else {
-          // FIXED: Handle both property naming conventions
           tbody.innerHTML = members.map(member => {
-            // Extract properties with fallbacks for different naming conventions
             const id = member.id || member.Global_ID || member.globalId || 'N/A';
             const recruitmentId = member.recruitmentId || member.Recruitment_ID || 'N/A';
             const fullName = member.fullName || member.Full_Name || 'N/A';
@@ -2234,7 +2126,6 @@ class App {
             const level = member.level || member.Member_Level || 'N/A';
             const photoUrl = member.photoUrl || member.Photo_URL || '';
             
-            // Generate photo HTML with fallback
             const photoHtml = photoUrl ? 
               `<img src="${this.fixDriveImageUrl(photoUrl)}" class="table-photo" alt="Photo" 
                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
@@ -2274,7 +2165,6 @@ class App {
         }
       }
       
-      // Setup select all checkbox
       const selectAll = document.getElementById('selectAllMembers');
       if (selectAll) {
         selectAll.checked = false;
@@ -2294,212 +2184,25 @@ class App {
     }
   }
 
-  static async loadMasul() {
-    this.loading(true, 'Loading Mas\'ul...');
+  static async viewMember(id) {
+    this.loading(true, 'Loading member details...');
     
     try {
-      const res = await this.api('getMembers', { 
-        search: '',
-        type: 'masul' 
-      });
-      const masul = res.data || [];
+      const res = await this.api('getMemberDetails', { memberId: id });
+      const data = res.data;
       
-      const tbody = document.getElementById('masulTableBody');
-      if (tbody) {
-        if (masul.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="9" class="text-center empty-state">
-                <i class="fas fa-user-shield fa-3x"></i>
-                <p>No Mas'ul leaders found</p>
-              </td>
-            </tr>
-          `;
-        } else {
-          tbody.innerHTML = masul.map(m => {
-            // Extract properties with fallbacks
-            const id = m.id || m.Global_ID || 'N/A';
-            const recruitmentId = m.recruitmentId || m.Recruitment_ID || 'N/A';
-            const fullName = m.fullName || m.Full_Name || 'N/A';
-            const email = m.email || m.Email || 'N/A';
-            const phone = m.phone || m.Phone_1 || 'N/A';
-            const branch = m.branch || m.Branch || 'N/A';
-            const recruitmentYear = m.recruitmentYear || m.Recruitment_Year || 'N/A';
-            const photoUrl = m.photoUrl || m.Photo_URL || '';
-            
-            // Generate photo HTML
-            const photoHtml = photoUrl ? 
-              `<img src="${this.fixDriveImageUrl(photoUrl)}" class="table-photo" alt="Photo" 
-                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
-              '';
-            
-            const placeholderHtml = `<div class="photo-placeholder" ${photoUrl ? 'style="display:none;"' : ''}>
-              ${(fullName || 'M').charAt(0)}
-            </div>`;
-            
-            return `
-              <tr>
-                <td>${photoHtml}${placeholderHtml}</td>
-                <td><code>${id}</code></td>
-                <td><code>${recruitmentId}</code></td>
-                <td><strong>${fullName}</strong></td>
-                <td>${email}</td>
-                <td>${phone}</td>
-                <td>${branch}</td>
-                <td>${recruitmentYear}</td>
-                <td>
-                  <div class="action-buttons">
-                    <button class="btn-icon btn-view" onclick="App.viewMember('${id}')" title="View Details">
-                      <i class="fas fa-eye"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            `;
-          }).join('');
-        }
-      }
-      
-      this.success(`Loaded ${masul.length} Mas'ul leaders`);
+      const modal = this.createMemberModal(data);
+      document.body.appendChild(modal);
       
     } catch (error) {
-      console.error('Failed to load Mas\'ul:', error);
-      this.error('Failed to load Mas\'ul leaders');
+      console.error('Failed to load member details:', error);
+      this.error('Failed to load member details');
     } finally {
       this.loading(false);
     }
   }
 
-  static async loadPromotions() {
-    this.loading(true, 'Loading promotions...');
-    
-    try {
-      // For now, we'll load from members API with a flag
-      // In a real app, you would have a dedicated promotions API
-      const res = await this.api('getRecentActivity');
-      const activity = res.data || [];
-      
-      const promotions = activity.filter(a => a.action.includes('promotion') || a.action.includes('Promotion'));
-      
-      const tbody = document.getElementById('promotionsTableBody');
-      if (tbody) {
-        if (promotions.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="6" class="text-center empty-state">
-                <i class="fas fa-chart-line fa-3x"></i>
-                <p>No promotion logs found</p>
-              </td>
-            </tr>
-          `;
-        } else {
-          tbody.innerHTML = promotions.map(promo => `
-            <tr>
-              <td>${new Date(promo.timestamp).toLocaleDateString()}</td>
-              <td><code>${promo.description.split(' ')[0] || 'N/A'}</code></td>
-              <td><span class="badge badge-level-${promo.description.includes('to') ? promo.description.split('to')[0].trim().toLowerCase() : 'unknown'}">
-                ${promo.description.includes('to') ? promo.description.split('to')[0].trim() : 'N/A'}
-              </span></td>
-              <td><span class="badge badge-level-${promo.description.includes('to') ? promo.description.split('to')[1].trim().toLowerCase() : 'unknown'}">
-                ${promo.description.includes('to') ? promo.description.split('to')[1].trim() : 'N/A'}
-              </span></td>
-              <td>${promo.userRole || 'Admin'}</td>
-              <td>${promo.description || ''}</td>
-            </tr>
-          `).join('');
-        }
-      }
-      
-    } catch (error) {
-      console.error('Failed to load promotions:', error);
-      this.error('Failed to load promotion logs');
-    } finally {
-      this.loading(false);
-    }
-  }
-
-  static async loadTransfers() {
-    this.loading(true, 'Loading transfers...');
-    
-    try {
-      const res = await this.api('getRecentActivity');
-      const activity = res.data || [];
-      
-      const transfers = activity.filter(a => a.action.includes('transfer') || a.action.includes('Transfer'));
-      
-      const tbody = document.getElementById('transfersTableBody');
-      if (tbody) {
-        if (transfers.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="6" class="text-center empty-state">
-                <i class="fas fa-exchange-alt fa-3x"></i>
-                <p>No transfer logs found</p>
-              </td>
-            </tr>
-          `;
-        } else {
-          tbody.innerHTML = transfers.map(transfer => `
-            <tr>
-              <td>${new Date(transfer.timestamp).toLocaleDateString()}</td>
-              <td><code>${transfer.description.split(' ')[0] || 'N/A'}</code></td>
-              <td>${transfer.description.includes('from') ? transfer.description.split('from')[1]?.split('to')[0]?.trim() || 'N/A' : 'N/A'}</td>
-              <td>${transfer.description.includes('to') ? transfer.description.split('to')[1]?.trim() || 'N/A' : 'N/A'}</td>
-              <td>${transfer.userRole || 'Admin'}</td>
-              <td>${transfer.description || ''}</td>
-            </tr>
-          `).join('');
-        }
-      }
-      
-    } catch (error) {
-      console.error('Failed to load transfers:', error);
-      this.error('Failed to load transfer logs');
-    } finally {
-      this.loading(false);
-    }
-  }
-
-  static async loadLogs() {
-    this.loading(true, 'Loading system logs...');
-    
-    try {
-      const res = await this.api('getRecentActivity');
-      const logs = res.data || [];
-      
-      const tbody = document.getElementById('logsTableBody');
-      if (tbody) {
-        if (logs.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="5" class="text-center empty-state">
-                <i class="fas fa-history fa-3x"></i>
-                <p>No system logs found</p>
-              </td>
-            </tr>
-          `;
-        } else {
-          tbody.innerHTML = logs.map(log => `
-            <tr>
-              <td>${new Date(log.timestamp).toLocaleString()}</td>
-              <td><strong>${log.action}</strong></td>
-              <td>${log.description}</td>
-              <td>${log.userRole || 'System'}</td>
-              <td>${log.userBranch || 'System'}</td>
-            </tr>
-          `).join('');
-        }
-      }
-      
-    } catch (error) {
-      console.error('Failed to load logs:', error);
-      this.error('Failed to load system logs');
-    } finally {
-      this.loading(false);
-    }
-  }
-
-  static showRegisterMemberModal() {
+  static createMemberModal(data) {
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.cssText = `
@@ -2520,9 +2223,10 @@ class App {
       <div class="modal-content" style="
         background: white;
         border-radius: 15px;
-        max-width: 500px;
+        max-width: 800px;
         width: 100%;
-        overflow: hidden;
+        max-height: 90vh;
+        overflow-y: auto;
         box-shadow: 0 10px 30px rgba(0,0,0,0.3);
       ">
         <div class="modal-header" style="
@@ -2532,9 +2236,12 @@ class App {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          position: sticky;
+          top: 0;
+          z-index: 1;
         ">
           <h3 style="margin: 0; font-size: 1.3rem; display: flex; align-items: center; gap: 10px;">
-            <i class="fas fa-user-plus"></i> Register New Member
+            <i class="fas fa-user"></i> Member Details
           </h3>
           <button class="modal-close" style="
             background: none;
@@ -2550,14 +2257,11 @@ class App {
             justify-content: center;
           ">×</button>
         </div>
+        
         <div class="modal-body" style="padding: 20px;">
-          <p style="margin: 0 0 15px 0; color: #666; line-height: 1.6;">
-            You will be redirected to the registration page where you can register a new member.
-          </p>
-          <p style="margin: 0 0 20px 0; color: #666; line-height: 1.6;">
-            <strong>Note:</strong> As admin, you can register members for any branch.
-          </p>
+          ${this.createMemberDetailsHTML(data)}
         </div>
+        
         <div class="modal-footer" style="
           padding: 20px;
           border-top: 1px solid #e9ecef;
@@ -2568,6 +2272,334 @@ class App {
           <button class="btn btn-secondary" style="
             padding: 10px 20px;
             background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+          ">Close</button>
+          <button class="btn btn-primary" onclick="window.print()" style="
+            padding: 10px 20px;
+            background: #228B22;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          ">
+            <i class="fas fa-print"></i> Print Profile
+          </button>
+        </div>
+      </div>
+    `;
+    
+    const closeBtn = modal.querySelector('.modal-close');
+    const closeBtn2 = modal.querySelector('.btn-secondary');
+    
+    const closeModal = () => modal.remove();
+    
+    closeBtn.addEventListener('click', closeModal);
+    closeBtn2.addEventListener('click', closeModal);
+    
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+    
+    return modal;
+  }
+
+  static createMemberDetailsHTML(data) {
+    const fullName = data.Full_Name || data.fullName || 'N/A';
+    const globalId = data.Global_ID || data.globalId || 'N/A';
+    const recruitmentId = data.Recruitment_ID || data.recruitmentId || 'N/A';
+    const type = data.Type || data.type || 'Member';
+    const gender = data.Gender || data.gender || 'N/A';
+    const branch = data.Branch || data.branch || 'N/A';
+    const zone = data.Zone || data.zone || 'N/A';
+    const level = data.Member_Level || data.level || 'N/A';
+    const status = data.Status || data.status || 'Active';
+    const phone1 = data.Phone_1 || data.phone1 || 'N/A';
+    const phone2 = data.Phone_2 || data.phone2 || 'N/A';
+    const email = data.Email || data.email || 'N/A';
+    const address = data.Residential_Address || data.residentialAddress || 'N/A';
+    const photoUrl = data.Photo_URL || data.photoUrl || '';
+    const birthDate = data.Birth_Date || data.birthDate || 'N/A';
+    const fatherName = data.Father_Name || data.fatherName || 'N/A';
+    const localGovernment = data.Local_Government || data.localGovernment || 'N/A';
+    const state = data.State || data.state || 'N/A';
+    const registrationDate = data.Registration_Date || data.registrationDate || 'N/A';
+    
+    return `
+      <div class="member-profile" style="
+        display: flex;
+        gap: 30px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+      ">
+        <div class="member-photo" style="flex-shrink: 0;">
+          <img src="${photoUrl ? this.fixDriveImageUrl(photoUrl) : 'https://via.placeholder.com/200/228B22/FFFFFF?text=IIM'}" 
+               alt="Photo" 
+               style="
+                 width: 200px;
+                 height: 200px;
+                 object-fit: cover;
+                 border-radius: 10px;
+                 border: 3px solid #228B22;
+               "
+               onerror="this.src='https://via.placeholder.com/200/228B22/FFFFFF?text=IIM'">
+        </div>
+        <div class="member-info" style="flex: 1; min-width: 300px;">
+          <h4 style="margin: 0 0 20px 0; color: #333; font-size: 1.5rem;">${fullName}</h4>
+          <div class="info-grid" style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+          ">
+            <div><strong>Global ID:</strong> <code>${globalId}</code></div>
+            <div><strong>Recruitment ID:</strong> <code>${recruitmentId}</code></div>
+            <div><strong>Type:</strong> ${type}</div>
+            <div><strong>Gender:</strong> ${gender}</div>
+            <div><strong>Branch:</strong> ${branch}</div>
+            <div><strong>Zone:</strong> ${zone}</div>
+            <div><strong>Level:</strong> ${level}</div>
+            <div><strong>Status:</strong> ${status}</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="contact-section" style="margin-bottom: 30px;">
+        <h5 style="margin: 0 0 15px 0; color: #333; font-size: 1.2rem;">Contact Information</h5>
+        <div class="info-grid" style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 15px;
+        ">
+          <div><strong>Phone 1:</strong> ${phone1}</div>
+          <div><strong>Phone 2:</strong> ${phone2}</div>
+          <div><strong>Email:</strong> ${email}</div>
+          <div><strong>Address:</strong> ${address}</div>
+        </div>
+      </div>
+      
+      ${type === 'Member' || type === 'member' ? `
+        <div class="personal-section">
+          <h5 style="margin: 0 0 15px 0; color: #333; font-size: 1.2rem;">Personal Information</h5>
+          <div class="info-grid" style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+          ">
+            <div><strong>Father's Name:</strong> ${fatherName}</div>
+            <div><strong>Birth Date:</strong> ${birthDate}</div>
+            <div><strong>Local Government:</strong> ${localGovernment}</div>
+            <div><strong>State:</strong> ${state}</div>
+            <div><strong>Registration Date:</strong> ${new Date(registrationDate).toLocaleDateString()}</div>
+          </div>
+        </div>
+      ` : ''}
+    `;
+  }
+
+  static async promoteMember(id) {
+    const newLevel = prompt(`Enter new level for member ${id}:\n\nAvailable levels: ${LEVELS.join(', ')}`);
+    
+    if (!newLevel || !LEVELS.includes(newLevel)) {
+      if (newLevel) this.error('Invalid level. Please select from: ' + LEVELS.join(', '));
+      return;
+    }
+    
+    const notes = prompt('Enter promotion notes (optional):');
+    
+    if (confirm(`Promote member to ${newLevel}?`)) {
+      this.loading(true, 'Promoting member...');
+      
+      try {
+        await this.api('promoteMember', { 
+          memberId: id, 
+          newLevel: newLevel,
+          notes: notes || ''
+        });
+        
+        this.success('Member promoted successfully!');
+        this.loadMembers();
+      } catch (error) {
+        console.error('Promotion failed:', error);
+        this.error('Promotion failed: ' + error.message);
+      } finally {
+        this.loading(false);
+      }
+    }
+  }
+
+  static async transferMember(id) {
+    const allBranches = Object.values(ZONES).flat();
+    
+    let branchList = '';
+    allBranches.forEach((branch, index) => {
+      branchList += `${index + 1}. ${branch}\n`;
+    });
+    
+    const newBranch = prompt(`Enter new branch for member ${id}:\n\nAvailable branches:\n${branchList}`);
+    
+    if (!newBranch || !allBranches.includes(newBranch)) {
+      if (newBranch) this.error('Invalid branch. Please select from the list.');
+      return;
+    }
+    
+    const notes = prompt('Enter transfer notes (optional):');
+    
+    if (confirm(`Transfer member to ${newBranch}?`)) {
+      this.loading(true, 'Transferring member...');
+      
+      try {
+        await this.api('transferMember', { 
+          memberId: id, 
+          newBranch: newBranch,
+          notes: notes || ''
+        });
+        
+        this.success('Member transferred successfully!');
+        this.loadMembers();
+      } catch (error) {
+        console.error('Transfer failed:', error);
+        this.error('Transfer failed: ' + error.message);
+      } finally {
+        this.loading(false);
+      }
+    }
+  }
+
+  static async exportData(type) {
+    if (!confirm(`Export ${type} data as CSV?`)) return;
+    
+    this.loading(true, 'Exporting data...');
+    
+    try {
+      const res = await this.api('exportData', { type: type });
+      const data = res.data;
+      
+      if (data && data.downloadUrl) {
+        window.open(data.downloadUrl, '_blank');
+        this.success(`Export completed! File: ${data.fileName}`);
+      } else {
+        throw new Error('No download URL received');
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      this.error('Export failed: ' + (error.message || 'Unknown error'));
+    } finally {
+      this.loading(false);
+    }
+  }
+
+  static async backupSystem() {
+    if (!confirm('Create system backup? This may take a moment.')) return;
+    
+    this.loading(true, 'Creating backup...');
+    
+    try {
+      const res = await this.api('backupSystem');
+      const data = res.data;
+      
+      if (data && data.backupUrl) {
+        window.open(data.backupUrl, '_blank');
+        this.success('Backup created successfully!');
+      } else {
+        throw new Error('No backup URL received');
+      }
+    } catch (error) {
+      console.error('Backup failed:', error);
+      this.error('Backup failed: ' + (error.message || 'Unknown error'));
+    } finally {
+      this.loading(false);
+    }
+  }
+
+  static logout() {
+    if (confirm('Are you sure you want to logout?')) {
+      localStorage.clear();
+      this.success('Logged out successfully');
+      setTimeout(() => {
+        location.href = 'index.html';
+      }, 1000);
+    }
+  }
+
+  static switchSection(section) {
+    const item = document.querySelector(`.menu-item[data-section="${section}"]`);
+    if (item) {
+      item.click();
+    }
+  }
+}
+
+// Enhanced initialization with error handling
+window.addEventListener('DOMContentLoaded', function() {
+  console.log('DOM fully loaded and parsed');
+  
+  if (!document.querySelector('#app-animations')) {
+    const style = document.createElement('style');
+    style.id = 'app-animations';
+    style.textContent = `
+      @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  if (typeof App !== 'undefined') {
+    setTimeout(() => {
+      App.init().catch(error => {
+        console.error('Failed to initialize App:', error);
+        App.error('Failed to initialize application. Please refresh the page.');
+      });
+    }, 100);
+  } else {
+    console.error('App is not defined. Check if app.js loaded correctly.');
+    
+    const errorDiv = document.createElement('div');
+    errorDiv.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #dc3545;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      z-index: 9999;
+      font-weight: 600;
+    `;
+    errorDiv.textContent = 'Error: Application failed to load. Please refresh the page.';
+    document.body.appendChild(errorDiv);
+  }
+});
+
+// Fallback initialization
+setTimeout(() => {
+  if (typeof App !== 'undefined' && typeof App.init === 'function') {
+    if (!window.appInitialized) {
+      window.appInitialized = true;
+      App.init();
+    }
+  }
+}, 500);
+
+// Make App available globally
+window.App = App;
+console.log('✅ App.js loaded successfully with ALL FIXES APPLIED!');7d;
             color: white;
             border: none;
             border-radius: 5px;

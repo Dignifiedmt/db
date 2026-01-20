@@ -711,7 +711,7 @@
                                 <div class="validation-message">Member level is required</div>
                             </div>
                             <div class="form-group" style="grid-column: 1 / -1;">
-                                <label for="photoInput">Passport Photograph <span class="required-star">*</span></label>
+                                <label for="photoInput">Passport Photograph (Optional)</label>
                                 <div class="photo-upload-area" id="photoUpload">
                                     <i class="fas fa-camera"></i>
                                     <p>Click to upload or drag & drop passport photograph</p>
@@ -724,7 +724,6 @@
                                     </div>
                                 </div>
                                 <input type="file" id="photoInput" accept="image/*" style="display: none;">
-                                <div class="validation-message">Passport photograph is optional</div>
                             </div>
                         </div>
                         
@@ -957,6 +956,12 @@
                 App.init();
             } else {
                 console.error('App not loaded');
+                setTimeout(() => location.reload(), 1000);
+            }
+        });
+    </script>
+</body>
+</html>not loaded');
                 setTimeout(() => location.reload(), 1000);
             }
         });
