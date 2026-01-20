@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration - Intizarul Imamul Muntazar</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Enhanced Registration Styles -->
+    <style>
+        /* Enhanced form styles */
+        .form-progress {
+            background: #e9ecef;
+            height: 6px;
+            border-radius: 3px;
+            margin: 20px 0 40px;
+            overflow: hidden;
+        }
+        
+        .form-progress-bar {
+            height: 100%;
+            background: #228B22;
+            width: 33%;
+            transition: width 0.3s ease;
+            border-radius: 3px;
+            position: relative;
+            text-align: center;
+            color: white;
+            font-size: 12px;
+            line-height: 6px;
+        }
+        
+        .form-step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin: 40px 0 30px;
+            position: relative;
+        }
+        
+        .step {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            cursor: pointer;
+        }
+        
+        .step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            width: 100%;
+            height: 2px;
+            background: #e9ecef;
+            z-index: -1;
+        }
+        
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: #e9ecef;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-weight: 600;
+            color: #6c757d;
+            border: 3px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .step.active .step-number {
+            background: #228B22;
+            color: white;
+            border-color: #228B22;
+        }
+        
+        .step.completed .step-number {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+        
+        .step-label {
+            font-size: 14px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .step.active .step-label {
+            color: #228B22;
+            font-weight: 600;
+        }
+        
+        .step.completed .step-label {
+            color: #28a745;
+        }
+        
+        .form-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .form-section {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .form-section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Enhanced photo upload */
+        .photo-upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+            margin-bottom: 20px;
+        }
+        
+        .photo-upload-area:hover {
+            border-color: #228B22;
+            background: rgba(34, 139, 34, 0.05);
+        }
+        
+        .photo-upload-area.drag-over {
+            border-color: #228B22;
+            background: rgba(34, 139, 34, 0.1);
+            transform: scale(1.02);
+        }
+        
+        .photo-upload-area i {
+            font-size: 48px;
+            color: #228B22;
+            margin-bottom: 15px;
+            opacity: 0.7;
+        }
+        
+        .photo-upload-area:hover i {
+            opacity: 1;
+        }
+        
+        .photo-preview-container {
+            position: relative;
+            max-width: 200px;
+            margin: 20px auto;
+        }
+        
+        .photo-preview {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 3px solid #228B22;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .photo-preview.show {
+            display: block;
+        }
+        
+        .photo-remove {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        
+        /* Enhanced input styling */
+        .form-control:focus {
+            border-color: #228B22;
+            box-shadow: 0 0 0 0.2rem rgba(34, 139, 34, 0.25);
+        }
+        
+        .form-control.valid {
+            border-color: #28a745;
+        }
+        
+        .form-control.invalid {
+            border-color: #dc3545;
+        }
+        
+        .form-group {
+            position: relative;
+        }
+        
+        .required-star {
+            color: #dc3545;
+            margin-left: 3px;
+        }
+        
+        .validation-message {
+            font-size: 12px;
+            color: #dc3545;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        .form-control.invalid + .validation-message {
+            display: block;
+        }
+        
+        /* Enhanced ID Card */
+        .id-card-enhanced {
+            background: linear-gradient(135deg, #1a6b1a 0%, #228B22 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin: 30px auto;
+            max-width: 600px;
+            box-shadow: 0 15px 35px rgba(34, 139, 34, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .id-card-enhanced::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 30px 30px;
+            opacity: 0.3;
+        }
+        
+        .id-header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .id-logo {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            color: #228B22;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        
+        .id-body {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .id-photo-container {
+            flex-shrink: 0;
+        }
+        
+        .id-photo {
+            width: 180px;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 3px solid white;
+            background: white;
+        }
+        
+        .id-details {
+            flex: 1;
+        }
+        
+        .id-row {
+            display: flex;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .id-label {
+            width: 150px;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+        
+        .id-value {
+            flex: 1;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .id-footer {
+            text-align: center;
+            margin-top: 30px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Success animation */
+        .success-check {
+            width: 100px;
+            height: 100px;
+            background: #28a745;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            animation: scaleIn 0.5s ease;
+        }
+        
+        .success-check i {
+            font-size: 50px;
+            color: white;
+        }
+        
+        @keyframes scaleIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+        
+        /* Arabic text styling */
+        .arabic-text {
+            font-family: 'Arial', sans-serif;
+            direction: rtl;
+            line-height: 1.8;
+        }
+        
+        /* Enhanced toggle switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #228B22;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+        
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            .id-body {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .id-row {
+                flex-direction: column;
+                text-align: center;
+                gap: 5px;
+            }
+            
+            .id-label {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            
+            .form-step-indicator {
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+            }
+            
+            .step:not(:last-child)::after {
+                display: none;
+            }
+            
+            .form-navigation {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .form-navigation button {
+                width: 100%;
+            }
+        }
+        
+        /* Mas'ul form toggle */
+        .masul-toggle {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            gap: 15px;
+        }
+        
+        /* Loading state */
+        .loading-state {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading-state.active {
+            display: block;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #228B22;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Enhanced Header -->
+    <header class="navbar">
+        <div class="container navbar-container">
+            <div class="logo">
+                <img src="https://via.placeholder.com/50/228B22/FFFFFF?text=IIM" alt="IIM Logo" class="logo-img">
+                <div class="logo-text">
+                    <h1 style="margin: 0; line-height: 1.2; font-size: 1.8rem;" class="arabic-text">إنتظار الإمام المنتظر</h1>
+                    <p style="margin: 5px 0 0 0; font-size: 0.9rem;" class="arabic-text">مؤسسة أبي الفضل العباس (تربير روح د غنغر جكي)</p>
+                </div>
+            </div>
+            <div class="user-info">
+                <div class="user-branch" id="currentBranch">Loading...</div>
+                <div class="user-badge">
+                    <i class="fas fa-users"></i>
+                    <span>Branch Mas'ul</span>
+                </div>
+                <button class="btn btn-accent" onclick="App.logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container container-lg">
+        <!-- Registration Header -->
+        <div class="registration-header bg-primary text-white">
+            <div class="header-content">
+                <div class="header-title">
+                    <i class="fas fa-user-plus"></i>
+                    <h1 id="formTitle">Member Registration (Muntazirun)</h1>
+                </div>
+                <p class="header-subtitle">
+                    Register new members with the form below. All fields marked with <span class="required-star">*</span> are required.
+                    Please ensure information is accurate before submission.
+                </p>
+                
+                <!-- Mas'ul Toggle -->
+                <div class="masul-toggle" id="masulToggleContainer" style="display: none;">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="masulToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span style="margin-left: 1rem; font-weight: 500;">Register Mas'ul (Admin Only)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading-state" id="loadingState">
+            <div class="loading-spinner"></div>
+            <p>Processing registration...</p>
+        </div>
+
+        <!-- Registration Form Container -->
+        <div id="formContainer">
+            <!-- Enhanced Member Registration Form with Steps -->
+            <div class="form-container" id="memberFormSection">
+                <!-- Form Progress -->
+                <div class="form-progress">
+                    <div class="form-progress-bar" id="formProgress">33%</div>
+                </div>
+                
+                <!-- Step Indicator -->
+                <div class="form-step-indicator">
+                    <div class="step active" data-step="personal">
+                        <div class="step-number">1</div>
+                        <div class="step-label">Personal Info</div>
+                    </div>
+                    <div class="step" data-step="contact">
+                        <div class="step-number">2</div>
+                        <div class="step-label">Contact & Address</div>
+                    </div>
+                    <div class="step" data-step="membership">
+                        <div class="step-number">3</div>
+                        <div class="step-label">Membership Details</div>
+                    </div>
+                </div>
+
+                <form id="memberRegistrationForm">
+                    <!-- Personal Information Tab -->
+                    <div class="form-section active" id="personalTab">
+                        <h2 class="section-title">
+                            <i class="fas fa-user-circle"></i> Personal Information
+                        </h2>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="fullName">Cikakken Suna <span class="required-star">*</span></label>
+                                <input type="text" id="fullName" class="form-control" required 
+                                       placeholder="Enter full name">
+                                <div class="validation-message">Full name is required</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="firstName">Suna <span class="required-star">*</span></label>
+                                <input type="text" id="firstName" class="form-control" required 
+                                       placeholder="Enter first name">
+                                <div class="validation-message">First name is required</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="fatherName">Sunan Mahaifi <span class="required-star">*</span></label>
+                                <input type="text" id="fatherName" class="form-control" required 
+                                       placeholder="Enter father's name">
+                                <div class="validation-message">Father's name is required</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="grandfatherName">Sunan Kaka</label>
+                                <input type="text" id="grandfatherName" class="form-control" 
+                                       placeholder="Enter grandfather's name">
+                            </div>
+                            <div class="form-group">
+                                <label for="birthDate">Ranar Haihuwa <span class="required-star">*</span></label>
+                                <input type="date" id="birthDate" class="form-control" required>
+                                <div class="validation-message">Birth date is required</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="gender">Gender <span class="required-star">*</span></label>
+                                <select id="gender" class="form-control" required>
+                                    <option value="">Select Gender</option>
+                                    <option value="Brother">Brother</option>
+                                    <option value="Sister">Sister</option>
+                                </select>
+                                <div class="validation-message">Gender is required</div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-navigation">
+                            <button type="button" class="btn btn-secondary prev-tab" disabled>
+                                <i class="fas fa-arrow-left"></i> Previous
+                            </button>
+                            <button type="button" class="btn btn-primary next-tab">
+                                Next <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Contact & Address Tab -->
+                    <div class="form-section" id="contactTab">
+                        <h2 class="section-title">
+                            <i class="fas fa-home"></i> Contact & Address
+                        </h2>
+                        <div class="form-grid">
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label for="residentialAddress">Adireshin Wajan Zama <span class="required-star">*</span></label>
+                                <textarea id="residentialAddress" class="form-control" required 
+                                          placeholder="Enter full residential address" rows="4"></textarea>
+                                <div class="validation-message">Residential address is required</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="neighborhood">Unguwa</label>
+                                <input type="text" id="neighborhood" class="form-control" placeholder="Enter neighborhood">
+                            </div>
+                            <div class="form-group">
+                                <label for="localGovernment">Karamar Hukuma</label>
+                                <input type="text" id="localGovernment" class="form-control" placeholder="Enter local government">
+                            </div>
+                            <div class="form-group">
+                                <label for="state">Jaha</label>
+                                <input type="text" id="state" class="form-control" placeholder="Enter state">
+                            </div>
+                            <div class="form-group">
+                                <label for="phone1">Lambar Waya 1 <span class="required-star">*</span></label>
+                                <input type="tel" id="phone1" class="form-control" required 
+                                       placeholder="Enter primary phone number">
+                                <div class="validation-message">Phone number is required</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="phone2">Lambar Waya 2</label>
+                                <input type="tel" id="phone2" class="form-control" 
+                                       placeholder="Enter secondary phone number">
+                            </div>
+                            
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label for="parentsGuardians">Sunan Iyaye/Masu kula</label>
+                                <input type="text" id="parentsGuardians" class="form-control" 
+                                       placeholder="Enter parents/guardians names">
+                            </div>
+                            
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label for="parentAddress">Adireshin Iyaye/masu kula</label>
+                                <textarea id="parentAddress" class="form-control" 
+                                          placeholder="Enter parents/guardians address" rows="3"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="form-navigation">
+                            <button type="button" class="btn btn-secondary prev-tab">
+                                <i class="fas fa-arrow-left"></i> Previous
+                            </button>
+                            <button type="button" class="btn btn-primary next-tab">
+                                Next <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Membership Details Tab -->
+                    <div class="form-section" id="membershipTab">
+                        <h2 class="section-title">
+                            <i class="fas fa-users"></i> Membership Details
+                        </h2>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="zone">Zone <span class="required-star">*</span></label>
+                                <select id="zone" class="form-control" required>
+                                    <option value="">Select Zone</option>
+                                </select>
+                                <div class="validation-message">Zone is required</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="branch">Branch <span class="required-star">*</span></label>
+                                <select id="branch" class="form-control" required>
+                                    <option value="">Select Branch</option>
+                                </select>
+                                <div class="validation-message">Branch is required</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="recruitmentYear">Year of Recruitment <span class="required-star">*</span></label>
+                                <select id="recruitmentYear" class="form-control" required>
+                                    <option value="">Select Year</option>
+                                </select>
+                                <div class="validation-message">Recruitment year is required</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberLevel">Level Admitted To <span class="required-star">*</span></label>
+                                <select id="memberLevel" class="form-control" required>
+                                    <option value="">Select Level</option>
+                                    <option value="Bakiyatullah">Bakiyatullah</option>
+                                    <option value="Ansarullah">Ansarullah</option>
+                                    <option value="Ghalibun">Ghalibun</option>
+                                    <option value="Graduate">Graduate</option>
+                                </select>
+                                <div class="validation-message">Member level is required</div>
+                            </div>
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label for="photoInput">Passport Photograph <span class="required-star">*</span></label>
+                                <div class="photo-upload-area" id="photoUpload">
+                                    <i class="fas fa-camera"></i>
+                                    <p>Click to upload or drag & drop passport photograph</p>
+                                    <p><small>Maximum size: 2MB | Format: JPG, PNG</small></p>
+                                    <div class="photo-preview-container">
+                                        <img id="photoPreview" class="photo-preview" alt="Photo preview">
+                                        <button type="button" class="photo-remove" id="photoRemoveBtn">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <input type="file" id="photoInput" accept="image/*" style="display: none;">
+                                <div class="validation-message">Passport photograph is optional</div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-navigation">
+                            <button type="button" class="btn btn-secondary prev-tab">
+                                <i class="fas fa-arrow-left"></i> Previous
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="submitMemberBtn">
+                                <i class="fas fa-save"></i> Register Member
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Mas'ul Registration Form -->
+            <div class="form-container" id="masulFormSection" style="display: none;">
+                <div class="form-header">
+                    <h2><i class="fas fa-user-shield"></i> Mas'ul Registration Form</h2>
+                    <p>Complete all fields below to register a new Mas'ul leader</p>
+                </div>
+                
+                <form id="masulRegistrationForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="masulFullName">Full Name <span class="required-star">*</span></label>
+                            <input type="text" id="masulFullName" class="form-control" required placeholder="Enter full name">
+                        </div>
+                        <div class="form-group">
+                            <label for="masulFatherName">Father's Name <span class="required-star">*</span></label>
+                            <input type="text" id="masulFatherName" class="form-control" required placeholder="Enter father's name">
+                        </div>
+                        <div class="form-group">
+                            <label for="masulBirthDate">Date of Birth <span class="required-star">*</span></label>
+                            <input type="date" id="masulBirthDate" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="masulEmail">Email <span class="required-star">*</span></label>
+                            <input type="email" id="masulEmail" class="form-control" required placeholder="Enter email address">
+                        </div>
+                        <div class="form-group">
+                            <label for="masulPhone1">Phone Number 1 <span class="required-star">*</span></label>
+                            <input type="tel" id="masulPhone1" class="form-control" required placeholder="Enter primary phone number">
+                        </div>
+                        <div class="form-group">
+                            <label for="masulPhone2">Phone Number 2</label>
+                            <input type="tel" id="masulPhone2" class="form-control" placeholder="Enter secondary phone number">
+                        </div>
+                        <!-- Added Gender field -->
+                        <div class="form-group">
+                            <label for="masulGender">Gender <span class="required-star">*</span></label>
+                            <select id="masulGender" class="form-control" required>
+                                <option value="">Select Gender</option>
+                                <option value="Brother">Brother</option>
+                                <option value="Sister">Sister</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="masulEducationLevel">Education Level <span class="required-star">*</span></label>
+                            <select id="masulEducationLevel" class="form-control" required>
+                                <option value="">Select Education Level</option>
+                                <option value="Primary">Primary</option>
+                                <option value="Secondary">Secondary</option>
+                                <option value="Diploma">Diploma</option>
+                                <option value="Bachelor">Bachelor</option>
+                                <option value="Master">Master</option>
+                                <option value="PhD">PhD</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="masulCourseStudying">Course Studying</label>
+                            <input type="text" id="masulCourseStudying" class="form-control" placeholder="Enter course of study">
+                        </div>
+                        
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label for="masulResidentialAddress">Residential Address <span class="required-star">*</span></label>
+                            <textarea id="masulResidentialAddress" class="form-control" required 
+                                      placeholder="Enter full residential address" rows="4"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="masulZone">Zone <span class="required-star">*</span></label>
+                            <select id="masulZone" class="form-control" required>
+                                <option value="">Select Zone</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="masulBranch">Branch <span class="required-star">*</span></label>
+                            <select id="masulBranch" class="form-control" required>
+                                <option value="">Select Branch</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="masulRecruitmentYear">Year of Recruitment <span class="required-star">*</span></label>
+                            <select id="masulRecruitmentYear" class="form-control" required>
+                                <option value="">Select Year</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label for="masulPhotoInput">Passport Photograph (Optional)</label>
+                            <div class="photo-upload-area" id="masulPhotoUpload">
+                                <i class="fas fa-camera"></i>
+                                <p>Click to upload or drag & drop passport photograph</p>
+                                <p><small>Maximum size: 2MB | Format: JPG, PNG</small></p>
+                                <div class="photo-preview-container">
+                                    <img id="masulPhotoPreview" class="photo-preview" alt="Photo preview">
+                                    <button type="button" class="photo-remove" id="masulPhotoRemoveBtn">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <input type="file" id="masulPhotoInput" accept="image/*" style="display: none;">
+                        </div>
+                        
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <div class="form-check">
+                                <input type="checkbox" id="masulDeclaration" class="form-check-input" required>
+                                <label for="masulDeclaration" class="form-check-label">
+                                    <strong>Declaration:</strong> I declare that the information provided is accurate and I commit to my responsibilities as Mas'ul. I understand that false information may lead to termination of my role.
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelMasulForm">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="submitMasulBtn">
+                            <i class="fas fa-save"></i> Register Mas'ul
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Enhanced Success Message -->
+        <div class="success-message" id="successMessage" style="display: none;">
+            <div class="success-check">
+                <i class="fas fa-check"></i>
+            </div>
+            <h2 class="success-title">Registration Successful!</h2>
+            <p class="success-text">The registration has been completed successfully.</p>
+            
+            <div class="id-card-enhanced">
+                <div class="id-header">
+                    <div class="id-logo">IIM</div>
+                    <h3>Registration ID Card</h3>
+                </div>
+                
+                <div class="id-body">
+                    <div class="id-photo-container">
+                        <img id="printPhoto" src="" alt="Passport Photo" class="id-photo" style="display: none;">
+                        <div class="id-photo-placeholder" id="photoPlaceholder" style="width: 180px; height: 180px; background: white; color: #228B22; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 32px; font-weight: bold;">IIM</div>
+                    </div>
+                    
+                    <div class="id-details">
+                        <div class="id-row">
+                            <div class="id-label">Full Name:</div>
+                            <div class="id-value" id="printFullName">-</div>
+                        </div>
+                        <div class="id-row">
+                            <div class="id-label">Global ID:</div>
+                            <div class="id-value" id="printGlobalId">-</div>
+                        </div>
+                        <div class="id-row">
+                            <div class="id-label">Recruitment ID:</div>
+                            <div class="id-value" id="printRecruitmentId">-</div>
+                        </div>
+                        <div class="id-row">
+                            <div class="id-label">Branch:</div>
+                            <div class="id-value" id="printBranch">-</div>
+                        </div>
+                        <div class="id-row">
+                            <div class="id-label">Level:</div>
+                            <div class="id-value" id="printLevel">-</div>
+                        </div>
+                        <div class="id-row">
+                            <div class="id-label">Date Registered:</div>
+                            <div class="id-value" id="printDate">-</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="id-footer">
+                    <p class="id-note">
+                        <small>This is an official registration document of Intizarul Imamul Muntazar. 
+                        Keep this information for your records.</small>
+                    </p>
+                </div>
+                
+                <div class="print-actions" style="text-align: center; margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="App.printIdCard()" style="background: white; color: #228B22; border: 2px solid white; margin: 5px;">
+                        <i class="fas fa-print"></i> Print ID Card
+                    </button>
+                    <button class="btn btn-primary" id="registerAnother" style="background: rgba(255,255,255,0.2); color: white; border: 2px solid white; margin: 5px;">
+                        <i class="fas fa-user-plus"></i> Register Another
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Debug button (remove after fixing) -->
+    <button onclick="App.debugRegistration()" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #ff9800;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        z-index: 10000;
+        font-weight: bold;
+    ">
+        🐛 Debug
+    </button>
+
+    <script src="app.js"></script>
+    <script>
+        // Wait for App to load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Registration page loaded');
+            if (window.App && typeof App.init === 'function') {
+                console.log('Calling App.init()');
+                App.init();
+            } else {
+                console.error('App not loaded');
+                setTimeout(() => location.reload(), 1000);
+            }
+        });
+    </script>
+</body>
+</html>                const sections = document.querySelectorAll('.form-section');
+                
+                // Set initial state
+                updateFormProgress('personal');
+                
+                // Add click handlers to steps
+                steps.forEach(step => {
+                    step.addEventListener('click', function() {
+                        const stepId = this.dataset.step;
+                        
+                        // Update steps
+                        steps.forEach(s => {
+                            s.classList.remove('active');
+                            s.classList.remove('completed');
+                        });
+                        
+                        this.classList.add('active');
+                        
+                        // Mark previous steps as completed
+                        const stepArray = Array.from(steps);
+                        const currentIndex = stepArray.indexOf(this);
+                        for (let i = 0; i < currentIndex; i++) {
+                            stepArray[i].classList.add('completed');
+                        }
+                        
+                        // Show corresponding section
+                        sections.forEach(section => {
+                            section.classList.remove('active');
+                        });
+                        
+                        const targetSection = document.getElementById(stepId + 'Tab');
+                        if (targetSection) {
+                            targetSection.classList.add('active');
+                        }
+                        
+                        // Update progress
+                        updateFormProgress(stepId);
+                        
+                        // Update button states
+                        const prevButtons = document.querySelectorAll('.prev-tab');
+                        const nextButtons = document.querySelectorAll('.next-tab');
+                        
+                        if (stepId === 'personal') {
+                            prevButtons.forEach(btn => btn.disabled = true);
+                        } else {
+                            prevButtons.forEach(btn => btn.disabled = false);
+                        }
+                        
+                        if (stepId === 'membership') {
+                            nextButtons.forEach(btn => btn.style.display = 'none');
+                        } else {
+                            nextButtons.forEach(btn => btn.style.display = 'inline-flex');
+                        }
+                    });
+                });
+                
+                // Next button handlers
+                document.querySelectorAll('.next-tab').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const currentSection = document.querySelector('.form-section.active');
+                        if (!currentSection) return;
+                        
+                        const currentStepId = currentSection.id.replace('Tab', '');
+                        const steps = ['personal', 'contact', 'membership'];
+                        const currentIndex = steps.indexOf(currentStepId);
+                        
+                        if (currentIndex < steps.length - 1) {
+                            const nextStep = steps[currentIndex + 1];
+                            const nextStepElement = document.querySelector(`.step[data-step="${nextStep}"]`);
+                            if (nextStepElement) {
+                                nextStepElement.click();
+                            }
+                        }
+                    });
+                });
+                
+                // Previous button handlers
+                document.querySelectorAll('.prev-tab').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const currentSection = document.querySelector('.form-section.active');
+                        if (!currentSection) return;
+                        
+                        const currentStepId = currentSection.id.replace('Tab', '');
+                        const steps = ['personal', 'contact', 'membership'];
+                        const currentIndex = steps.indexOf(currentStepId);
+                        
+                        if (currentIndex > 0) {
+                            const prevStep = steps[currentIndex - 1];
+                            const prevStepElement = document.querySelector(`.step[data-step="${prevStep}"]`);
+                            if (prevStepElement) {
+                                prevStepElement.click();
+                            }
+                        }
+                    });
+                });
+                
+                // Initialize App if available
+                if (window.App) {
+                    window.App.init();
+                }
+            }, 100);
+        });
+    </script>
+</body>
+</html>

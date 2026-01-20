@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intizarul Imamul Muntazar - Membership Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Card Image Styling */
+        .card-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .card-body {
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card-image:hover {
+            transform: scale(1.03);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Card styling for different themes */
+        .card:nth-child(1) .card-image {
+            border: 3px solid #1a6b1a;
+            box-shadow: 0 4px 8px rgba(26, 107, 26, 0.3);
+        }
+        
+        .card:nth-child(2) .card-image {
+            border: 3px solid #2C3E50;
+            box-shadow: 0 4px 8px rgba(44, 62, 80, 0.3);
+        }
+        
+        .card:nth-child(3) .card-image {
+            border: 3px solid #E67E22;
+            box-shadow: 0 4px 8px rgba(230, 126, 34, 0.3);
+        }
+        
+        /* Image placeholder styling */
+        .card-image[src*="placeholder"] {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            background: linear-gradient(135deg, #228B22 0%, #1a6b1a 100%);
+        }
+        
+        .card:nth-child(2) .card-image[src*="placeholder"] {
+            background: linear-gradient(135deg, #2C3E50 0%, #1c2833 100%);
+        }
+        
+        .card:nth-child(3) .card-image[src*="placeholder"] {
+            background: linear-gradient(135deg, #E67E22 0%, #d35400 100%);
+        }
+        
+        /* Card body improvements */
+        .card-body {
+            position: relative;
+        }
+        
+        .card-body::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #e0e0e0, transparent);
+        }
+        
+        /* Animation for image loading */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .card-image {
+            animation: fadeInUp 0.5s ease-out;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .card-image {
+                height: 180px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .card-image {
+                height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="navbar">
+        <div class="container navbar-container">
+            <div class="logo">
+                <img src="logo.png" alt="IIM Logo" class="logo-img">
+                <div class="logo-text">
+                    <h1 style="margin: 0; font-size: 1.8rem; color: #228B22; line-height: 1.2;">إنتظار الإمام المنتظر</h1>
+                    <p style="margin: 0; font-size: 0.9rem; color: #666; line-height: 1.4;">
+                        مؤسسة أبي الفضل العباس<br>
+                        (تربير روح د غنغر جكي)
+                    </p>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="index.html" class="nav-link active">
+                    <i class="fas fa-home"></i> Home
+                </a>
+                <a href="login.html?role=admin" class="nav-link">
+                    <i class="fas fa-user-shield"></i> Admin
+                </a>
+                <a href="login.html?role=masul" class="nav-link">
+                    <i class="fas fa-users"></i> Branch Mas'ul
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero bg-primary text-white">
+        <div class="container">
+            <div class="text-center">
+                <h1 class="hero-title">Welcome to Intizarul Imamul Muntazar</h1>
+                <p class="hero-subtitle">
+                    A comprehensive membership database system for managing members, tracking progress, 
+                    and organizing our community efficiently. Join us in building a better future.
+                </p>
+                
+                <div class="action-buttons">
+                    <a href="login.html?role=admin" class="btn btn-accent btn-lg">
+                        <i class="fas fa-user-shield"></i> Admin Login
+                    </a>
+                    <a href="login.html?role=masul" class="btn btn-outline btn-lg">
+                        <i class="fas fa-users"></i> Branch Mas'ul Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Cards Section -->
+    <section class="section">
+        <div class="container">
+            <div class="row">
+                <!-- Card 1: Imam Mahdi -->
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-star-and-crescent"></i>
+                            <h3>Imam Mahdi (AS)</h3>
+                        </div>
+                        <div class="card-body">
+                            <img src="https://via.placeholder.com/400x250/228B22/FFFFFF?text=Imam+Mahdi+(AS)" 
+                                 alt="Imam Mahdi" class="card-image"
+                                 title="Imam Mahdi - The Awaited Savior">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Sayyid Ibrahim Zakzaky -->
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-user-tie"></i>
+                            <h3>Sayyid Ibrahim Zakzaky (H)</h3>
+                        </div>
+                        <div class="card-body">
+                            <img src="https://via.placeholder.com/400x250/2C3E50/FFFFFF?text=Sayyid+Ibrahim+Zakzaky+(H)" 
+                                 alt="Sayyid Ibrahim Zakzaky" class="card-image"
+                                 title="Sayyid Ibrahim Zakzaky - Our Leader">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Our Mission -->
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-bullseye"></i>
+                            <h3>Our Mission</h3>
+                        </div>
+                        <div class="card-body">
+                        
+                            <img src="logo.png" 
+                                 alt="Our Mission" class="card-image"
+                                 title="Our Mission and Vision">
+                                 
+                                 
+                                 <p class="card-text" style="text-align:center">
+                                 	To organize and manage members effectively, promote Islamic values, 
+                                 	and prepare for the reappearance of Imam Mahdi through education, 
+                                 	community service, and spiritual development.
+                                 </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics -->
+    <section class="section bg-light">
+        <div class="container">
+            <h2 class="text-center mb-4">System Statistics</h2>
+            <div class="row" id="statsContainer">
+                <div class="col-3">
+                    <div class="stat-card">
+                        <span class="stat-number" id="totalMembers">0</span>
+                        <span class="stat-label">Total Members</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="stat-card">
+                        <span class="stat-number" id="totalMasul">0</span>
+                        <span class="stat-label">Mas'ul Leaders</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="stat-card">
+                        <span class="stat-number" id="totalBranches">0</span>
+                        <span class="stat-label">Branches</span>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="stat-card">
+                        <span class="stat-number" id="totalZones">9</span>
+                        <span class="stat-label">Zones</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-secondary text-white">
+        <div class="container">
+            <div class="section-sm">
+                <div class="text-center">
+                    <div class="logo mb-2">
+                        <img src="logo.png" alt="IIM Logo" class="logo-img">
+                        <div class="logo-text">Intizarul <span>Imamul Muntazar</span></div>
+                    </div>
+                    <p>Comprehensive Membership Database System</p>
+                    
+                    <div class="copyright mt-3" style="color: #228B22; font-weight: 600;">
+                        &copy; <span id="currentYear">2026</span> Intizarul Imamul Muntazar. All rights reserved.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+    
+    <script>
+        // Set current year in footer
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+        
+        // Add hover effects to cards
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.card');
+            
+            cards.forEach(card => {
+                // Add click effect
+                card.addEventListener('click', function() {
+                    this.style.transform = 'translateY(-5px)';
+                    setTimeout(() => {
+                        this.style.transform = 'translateY(0)';
+                    }, 200);
+                });
+                
+                // Add keyboard navigation
+                card.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.click();
+                    }
+                });
+                
+                // Make cards focusable
+                card.setAttribute('tabindex', '0');
+            });
+            
+            // Preload images for better UX
+            const images = document.querySelectorAll('.card-image');
+            images.forEach(img => {
+                const imageUrl = img.src;
+                const preloadImage = new Image();
+                preloadImage.src = imageUrl;
+            });
+        });
+    </script>
+</body>
+</html>});
+        });
+    </script>
+</body>
+</html>
+            });
+        });
+    </script>
+</body>
+</html>
