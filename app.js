@@ -1,5 +1,5 @@
 // app.js - COMPLETE FIXED FRONTEND FOR INTIZARUL IMAMUL MUNTAZAR
-// VERSION: 6.0.1 - SIMPLIFIED LOGIN FIX APPLIED
+// VERSION: 6.0.2 - FIXED TAB NAVIGATION SYSTEM
 // LAST UPDATED: 2024
 
 const CONFIG = {
@@ -980,254 +980,287 @@ class App {
   }
 
   // ============================================
-  // REGISTRATION PAGE - NO CHANGES NEEDED
+  // FIXED REGISTRATION PAGE WITH TAB NAVIGATION
   // ============================================
   static setupRegister() {
     console.log('🔧 Setting up registration page...');
     
     const initRegistration = () => {
-      console.log('DOM ready for registration setup');
-      
-      // 1. Show current user info
-      const userName = localStorage.getItem('userName') || 'User';
-      const userBranch = localStorage.getItem('userBranch');
-      const currentBranch = document.getElementById('currentBranch');
-      
-      if (currentBranch) {
-        currentBranch.textContent = userBranch ? `Branch: ${userBranch}` : `User: ${userName}`;
-      }
-      
-      // 2. Admin can register Mas'ul
-      const userRole = localStorage.getItem('userRole');
-      const masulToggleContainer = document.getElementById('masulToggleContainer');
-      
-      if (masulToggleContainer && userRole === 'admin') {
-        masulToggleContainer.style.display = 'block';
-      }
-      
-      // 3. Initialize form elements
-      this.populateZones('zone', 'branch');
-      this.populateYears('recruitmentYear');
-      this.setupPhoto('photoUpload', 'photoInput', 'photoPreview');
-      
-      // 4. Set date limits
-      const today = new Date();
-      const minDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
-      const maxDate = new Date(today.getFullYear() - 8, today.getMonth(), today.getDate());
-      
-      const birthDate = document.getElementById('birthDate');
-      const masulBirthDate = document.getElementById('masulBirthDate');
-      
-      if (birthDate) {
-        birthDate.setAttribute('min', minDate.toISOString().split('T')[0]);
-        birthDate.setAttribute('max', maxDate.toISOString().split('T')[0]);
-      }
-      
-      if (masulBirthDate) {
-        masulBirthDate.setAttribute('min', minDate.toISOString().split('T')[0]);
-        masulBirthDate.setAttribute('max', maxDate.toISOString().split('T')[0]);
-      }
-      
-      // 5. Phone validation
-      document.querySelectorAll('input[type="tel"]').forEach(input => {
-        input.addEventListener('input', function(e) {
-          this.value = this.value.replace(/[^0-9+]/g, '');
-        });
-      });
-      
-      // ✅✅✅ CRITICAL FIX 1: Setup tab switching
-      this.setupFormTabs();
-      
-      // ✅✅✅ CRITICAL FIX 2: Member registration form
-      const setupMemberForm = () => {
-        const memberForm = document.getElementById('memberRegistrationForm');
-        console.log('Looking for member form:', memberForm);
+        console.log('DOM ready for registration setup');
         
-        if (!memberForm) {
-          console.error('Member form not found, retrying...');
-          setTimeout(setupMemberForm, 100);
-          return;
+        // 1. Show current user info
+        const userName = localStorage.getItem('userName') || 'User';
+        const userBranch = localStorage.getItem('userBranch');
+        const currentBranch = document.getElementById('currentBranch');
+        
+        if (currentBranch) {
+            currentBranch.textContent = userBranch ? `Branch: ${userBranch}` : `User: ${userName}`;
         }
         
-        // Remove existing listener if any
-        const oldForm = memberForm.cloneNode(true);
-        memberForm.parentNode.replaceChild(oldForm, memberForm);
+        // 2. Admin can register Mas'ul
+        const userRole = localStorage.getItem('userRole');
+        const masulToggleContainer = document.getElementById('masulToggleContainer');
         
-        // Attach new listener
-        document.getElementById('memberRegistrationForm').addEventListener('submit', async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('✅ Member form SUBMITTED!');
-          await App.handleMemberRegistration();
+        if (masulToggleContainer && userRole === 'admin') {
+            masulToggleContainer.style.display = 'block';
+        }
+        
+        // 3. Initialize form elements
+        this.populateZones('zone', 'branch');
+        this.populateYears('recruitmentYear');
+        this.setupPhoto('photoUpload', 'photoInput', 'photoPreview');
+        
+        // 4. Set date limits
+        const today = new Date();
+        const minDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
+        const maxDate = new Date(today.getFullYear() - 8, today.getMonth(), today.getDate());
+        
+        const birthDate = document.getElementById('birthDate');
+        const masulBirthDate = document.getElementById('masulBirthDate');
+        
+        if (birthDate) {
+            birthDate.setAttribute('min', minDate.toISOString().split('T')[0]);
+            birthDate.setAttribute('max', maxDate.toISOString().split('T')[0]);
+        }
+        
+        if (masulBirthDate) {
+            masulBirthDate.setAttribute('min', minDate.toISOString().split('T')[0]);
+            masulBirthDate.setAttribute('max', maxDate.toISOString().split('T')[0]);
+        }
+        
+        // 5. Phone validation
+        document.querySelectorAll('input[type="tel"]').forEach(input => {
+            input.addEventListener('input', function(e) {
+                this.value = this.value.replace(/[^0-9+]/g, '');
+            });
         });
         
-        console.log('✅ Member form event listener attached');
-      };
-      
-      setupMemberForm();
-      
-      // 6. Mas'ul registration toggle
-      const masulToggle = document.getElementById('masulToggle');
-      if (masulToggle) {
-        masulToggle.addEventListener('change', e => {
-          const showMasulForm = e.target.checked;
-          
-          const formTitle = document.getElementById('formTitle');
-          const memberFormSection = document.getElementById('memberFormSection');
-          const masulFormSection = document.getElementById('masulFormSection');
-          
-          if (formTitle) {
-            formTitle.textContent = showMasulForm ? 'Mas\'ul Registration' : 'Member Registration (Muntazirun)';
-          }
-          
-          if (memberFormSection) {
-            memberFormSection.style.display = showMasulForm ? 'none' : 'block';
-          }
-          
-          if (masulFormSection) {
-            masulFormSection.style.display = showMasulForm ? 'block' : 'none';
-          }
-          
-          if (showMasulForm) {
-            this.populateZones('masulZone', 'masulBranch');
-            this.populateYears('masulRecruitmentYear');
-            this.setupPhoto('masulPhotoUpload', 'masulPhotoInput', 'masulPhotoPreview');
-          }
-        });
-      }
-      
-      // 7. Mas'ul registration form
-      const masulForm = document.getElementById('masulRegistrationForm');
-      if (masulForm) {
-        masulForm.addEventListener('submit', async e => {
-          e.preventDefault();
-          await this.handleMasulRegistration();
-        });
-      }
-      
-      // 8. Cancel Mas'ul form
-      const cancelMasulBtn = document.getElementById('cancelMasulForm');
-      if (cancelMasulBtn) {
-        cancelMasulBtn.addEventListener('click', () => {
-          const masulToggle = document.getElementById('masulToggle');
-          if (masulToggle) {
-            masulToggle.checked = false;
-            masulToggle.dispatchEvent(new Event('change'));
-          }
-        });
-      }
-      
-      console.log('✅ Registration page setup complete');
+        // ✅ CRITICAL: Setup tab switching with NO CONFLICTS
+        this.setupFormTabs();
+        
+        // ✅ Member registration form
+        const memberForm = document.getElementById('memberRegistrationForm');
+        if (memberForm) {
+            // Clear any existing listeners
+            const newForm = memberForm.cloneNode(true);
+            memberForm.parentNode.replaceChild(newForm, memberForm);
+            
+            // Attach new listener
+            document.getElementById('memberRegistrationForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                console.log('✅ Member form submitted');
+                await App.handleMemberRegistration();
+            });
+        }
+        
+        // 6. Mas'ul registration toggle
+        const masulToggle = document.getElementById('masulToggle');
+        if (masulToggle) {
+            masulToggle.addEventListener('change', e => {
+                const showMasulForm = e.target.checked;
+                
+                const formTitle = document.getElementById('formTitle');
+                const memberFormSection = document.getElementById('memberFormSection');
+                const masulFormSection = document.getElementById('masulFormSection');
+                
+                if (formTitle) {
+                    formTitle.textContent = showMasulForm ? 'Mas\'ul Registration' : 'Member Registration (Muntazirun)';
+                }
+                
+                if (memberFormSection) {
+                    memberFormSection.style.display = showMasulForm ? 'none' : 'block';
+                }
+                
+                if (masulFormSection) {
+                    masulFormSection.style.display = showMasulForm ? 'block' : 'none';
+                }
+                
+                if (showMasulForm) {
+                    this.populateZones('masulZone', 'masulBranch');
+                    this.populateYears('masulRecruitmentYear');
+                    this.setupPhoto('masulPhotoUpload', 'masulPhotoInput', 'masulPhotoPreview');
+                }
+            });
+        }
+        
+        // 7. Mas'ul registration form
+        const masulForm = document.getElementById('masulRegistrationForm');
+        if (masulForm) {
+            masulForm.addEventListener('submit', async e => {
+                e.preventDefault();
+                await this.handleMasulRegistration();
+            });
+        }
+        
+        // 8. Cancel Mas'ul form
+        const cancelMasulBtn = document.getElementById('cancelMasulForm');
+        if (cancelMasulBtn) {
+            cancelMasulBtn.addEventListener('click', () => {
+                const masulToggle = document.getElementById('masulToggle');
+                if (masulToggle) {
+                    masulToggle.checked = false;
+                    masulToggle.dispatchEvent(new Event('change'));
+                }
+            });
+        }
+        
+        console.log('✅ Registration page setup complete');
     };
     
     // Wait for DOM to be ready
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initRegistration);
+        document.addEventListener('DOMContentLoaded', initRegistration);
     } else {
-      initRegistration();
+        initRegistration();
     }
   }
 
+  // ============================================
+  // FIXED TAB NAVIGATION SYSTEM - NO CONFLICTS
+  // ============================================
   static setupFormTabs() {
+    console.log('🔧 Setting up form tabs...');
+    
+    const formContainer = document.getElementById('memberFormSection');
+    if (!formContainer) {
+        console.log('No member form section found');
+        return;
+    }
+    
+    // Clear any existing event listeners by cloning
+    const oldForm = formContainer.cloneNode(true);
+    formContainer.parentNode.replaceChild(oldForm, formContainer);
+    
+    // Re-get elements after clone
     const steps = document.querySelectorAll('.step');
     const sections = document.querySelectorAll('.form-section');
     
-    // Function to switch tabs
+    if (steps.length === 0 || sections.length === 0) {
+        console.error('Tab elements not found');
+        return;
+    }
+    
+    // Function to switch tabs - simple and direct
     const switchTab = (stepId) => {
-      // Update steps
-      steps.forEach(step => {
-        step.classList.remove('active');
-        step.classList.remove('completed');
-      });
-      
-      const activeStep = document.querySelector(`.step[data-step="${stepId}"]`);
-      if (activeStep) {
-        activeStep.classList.add('active');
+        console.log(`Switching to tab: ${stepId}`);
         
-        // Mark previous steps as completed
-        const stepArray = Array.from(steps);
-        const currentIndex = stepArray.findIndex(s => s === activeStep);
-        for (let i = 0; i < currentIndex; i++) {
-          stepArray[i].classList.add('completed');
+        // Update steps
+        steps.forEach(step => {
+            step.classList.remove('active');
+            step.classList.remove('completed');
+        });
+        
+        // Activate clicked step
+        const activeStep = document.querySelector(`.step[data-step="${stepId}"]`);
+        if (activeStep) {
+            activeStep.classList.add('active');
+            
+            // Mark previous steps as completed
+            const stepArray = Array.from(steps);
+            const currentIndex = stepArray.findIndex(s => s === activeStep);
+            for (let i = 0; i < currentIndex; i++) {
+                stepArray[i].classList.add('completed');
+            }
         }
-      }
-      
-      // Show corresponding section
-      sections.forEach(section => {
-        section.classList.remove('active');
-      });
-      
-      const targetSection = document.getElementById(stepId + 'Tab');
-      if (targetSection) {
-        targetSection.classList.add('active');
-      }
-      
-      // Update progress bar
-      this.updateFormProgress(stepId);
-      
-      // Update button states
-      const prevButtons = document.querySelectorAll('.prev-tab');
-      const nextButtons = document.querySelectorAll('.next-tab');
-      
-      if (stepId === 'personal') {
-        prevButtons.forEach(btn => btn.disabled = true);
-      } else {
-        prevButtons.forEach(btn => btn.disabled = false);
-      }
-      
-      if (stepId === 'membership') {
-        nextButtons.forEach(btn => btn.style.display = 'none');
-      } else {
-        nextButtons.forEach(btn => btn.style.display = 'inline-flex');
-      }
+        
+        // Show corresponding section
+        sections.forEach(section => {
+            section.classList.remove('active');
+        });
+        
+        const targetSection = document.getElementById(stepId + 'Tab');
+        if (targetSection) {
+            targetSection.classList.add('active');
+        }
+        
+        // Update progress
+        this.updateFormProgress(stepId);
+        
+        // Update button states
+        this.updateTabButtons(stepId);
     };
     
-    // Add click handlers to steps
+    // Simple click handlers for steps
     steps.forEach(step => {
-      step.addEventListener('click', function() {
-        const stepId = this.dataset.step;
-        switchTab(stepId);
-      });
+        step.addEventListener('click', function(e) {
+            e.preventDefault();
+            const stepId = this.getAttribute('data-step');
+            switchTab(stepId);
+        });
     });
     
     // Next button handlers
     document.querySelectorAll('.next-tab').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const currentSection = document.querySelector('.form-section.active');
-        if (!currentSection) return;
-        
-        const currentStepId = currentSection.id.replace('Tab', '');
-        const stepsOrder = ['personal', 'contact', 'membership'];
-        const currentIndex = stepsOrder.indexOf(currentStepId);
-        
-        if (currentIndex < stepsOrder.length - 1) {
-          const nextStep = stepsOrder[currentIndex + 1];
-          switchTab(nextStep);
-        }
-      });
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const currentSection = document.querySelector('.form-section.active');
+            if (!currentSection) return;
+            
+            const currentStepId = currentSection.id.replace('Tab', '');
+            const stepsOrder = ['personal', 'contact', 'membership'];
+            const currentIndex = stepsOrder.indexOf(currentStepId);
+            
+            if (currentIndex < stepsOrder.length - 1) {
+                const nextStep = stepsOrder[currentIndex + 1];
+                switchTab(nextStep);
+            }
+        });
     });
     
     // Previous button handlers
     document.querySelectorAll('.prev-tab').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const currentSection = document.querySelector('.form-section.active');
-        if (!currentSection) return;
-        
-        const currentStepId = currentSection.id.replace('Tab', '');
-        const stepsOrder = ['personal', 'contact', 'membership'];
-        const currentIndex = stepsOrder.indexOf(currentStepId);
-        
-        if (currentIndex > 0) {
-          const prevStep = stepsOrder[currentIndex - 1];
-          switchTab(prevStep);
-        }
-      });
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const currentSection = document.querySelector('.form-section.active');
+            if (!currentSection) return;
+            
+            const currentStepId = currentSection.id.replace('Tab', '');
+            const stepsOrder = ['personal', 'contact', 'membership'];
+            const currentIndex = stepsOrder.indexOf(currentStepId);
+            
+            if (currentIndex > 0) {
+                const prevStep = stepsOrder[currentIndex - 1];
+                switchTab(prevStep);
+            }
+        });
     });
     
     // Initialize with first tab
-    if (steps.length > 0) {
-      const firstStep = steps[0];
-      switchTab(firstStep.dataset.step);
+    const firstStep = steps[0];
+    if (firstStep) {
+        const firstStepId = firstStep.getAttribute('data-step');
+        switchTab(firstStepId);
+    }
+    
+    console.log('✅ Form tabs setup complete');
+  }
+
+  static updateTabButtons(currentStep) {
+    const prevButtons = document.querySelectorAll('.prev-tab');
+    const nextButtons = document.querySelectorAll('.next-tab');
+    
+    if (currentStep === 'personal') {
+        prevButtons.forEach(btn => {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+        });
+    } else {
+        prevButtons.forEach(btn => {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+        });
+    }
+    
+    if (currentStep === 'membership') {
+        nextButtons.forEach(btn => {
+            btn.style.display = 'none';
+        });
+    } else {
+        nextButtons.forEach(btn => {
+            btn.style.display = 'inline-flex';
+        });
     }
   }
 
@@ -1684,6 +1717,35 @@ class App {
         document.body.classList.remove('printing');
       }, 1000);
     }, 100);
+  }
+
+  // ============================================
+  // DEBUG FUNCTION FOR TABS
+  // ============================================
+  static debugTabs() {
+    console.log('=== 🔍 DEBUG TABS ===');
+    
+    // Check if elements exist
+    console.log('Steps found:', document.querySelectorAll('.step').length);
+    console.log('Sections found:', document.querySelectorAll('.form-section').length);
+    console.log('Next buttons:', document.querySelectorAll('.next-tab').length);
+    console.log('Prev buttons:', document.querySelectorAll('.prev-tab').length);
+    
+    // Check current active tab
+    const activeSection = document.querySelector('.form-section.active');
+    console.log('Active section:', activeSection ? activeSection.id : 'None');
+    
+    // Test tab click manually
+    const firstStep = document.querySelector('.step');
+    if (firstStep) {
+        console.log('First step data:', firstStep.getAttribute('data-step'));
+        
+        // Simulate click
+        firstStep.click();
+        console.log('Clicked first step');
+    }
+    
+    alert('Check console (F12) for tab debug info');
   }
 
   // ============================================
@@ -2801,4 +2863,4 @@ setTimeout(() => {
 
 // Make App available globally
 window.App = App;
-console.log('✅ App.js loaded successfully with SIMPLIFIED LOGIN FIX!');
+console.log('✅ App.js loaded successfully with FIXED TAB NAVIGATION SYSTEM!');
