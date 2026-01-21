@@ -11,7 +11,7 @@
     
     <!-- Enhanced Dashboard Styles with FIXES -->
     <style>
-        /* ===== HAMBURGER MENU FIX - UPDATED ===== */
+        /* ===== HAMBURGER MENU FIX - SIMPLIFIED ===== */
         .menu-toggle {
             display: none;
             background: none;
@@ -19,24 +19,22 @@
             font-size: 1.5rem;
             cursor: pointer;
             color: #333;
-            margin-right: 15px;
             padding: 10px;
             border-radius: 5px;
             transition: all 0.3s ease;
-            position: relative;
-            z-index: 1001;
+            margin-right: 15px;
         }
-        
+
         .menu-toggle:hover {
             background: rgba(34, 139, 34, 0.1);
             color: #228B22;
         }
-        
+
         .sidebar-close {
             display: none;
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: 15px;
+            right: 15px;
             background: rgba(255, 255, 255, 0.2);
             border: none;
             color: white;
@@ -49,12 +47,30 @@
             justify-content: center;
             font-size: 1.2rem;
         }
-        
+
         .sidebar-close:hover {
             background: rgba(255, 255, 255, 0.3);
         }
-        
-        /* Mobile Sidebar - FIXED: Use .active class */
+
+        /* Desktop Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Mobile Styles */
         @media (max-width: 992px) {
             .menu-toggle {
                 display: flex !important;
@@ -63,24 +79,17 @@
             }
             
             .sidebar {
-                position: fixed;
                 left: -280px;
-                top: 0;
-                height: 100vh;
-                z-index: 1000;
                 transition: left 0.3s ease-in-out;
-                box-shadow: 5px 0 15px rgba(0,0,0,0.1);
             }
             
-            /* FIXED: Use .active instead of .collapsed for consistency */
-            .sidebar.active {
+            .sidebar.mobile-open {
                 left: 0;
             }
             
             .main-content {
-                margin-left: 0 !important;
+                margin-left: 0;
                 width: 100%;
-                transition: margin-left 0.3s ease;
             }
             
             .sidebar-close {
@@ -93,38 +102,14 @@
                 position: fixed;
                 top: 0;
                 left: 0;
-                right: 0;
-                bottom: 0;
+                width: 100%;
+                height: 100%;
                 background: rgba(0, 0, 0, 0.5);
                 z-index: 999;
-                opacity: 0;
-                transition: opacity 0.3s ease;
             }
             
             .overlay.active {
                 display: block;
-                opacity: 1;
-            }
-        }
-        
-        /* Desktop Sidebar - FIXED: Remove .collapsed references */
-        @media (min-width: 993px) {
-            .sidebar {
-                position: fixed;
-                left: 0;
-            }
-            
-            .main-content {
-                margin-left: 280px;
-            }
-            
-            /* FIXED: Remove collapsed state for desktop */
-            .sidebar.collapsed {
-                width: 280px;
-            }
-            
-            .sidebar.collapsed + .main-content {
-                margin-left: 280px;
             }
         }
         
@@ -1218,67 +1203,58 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Dashboard initialized - FIXED VERSION');
             
-            // Mobile menu functionality - UPDATED to match app.js
+            // Mobile menu functionality - SIMPLIFIED
             const menuToggle = document.getElementById('menuToggle');
             const sidebar = document.getElementById('sidebar');
             const sidebarClose = document.getElementById('sidebarClose');
             const mobileOverlay = document.getElementById('mobileOverlay');
-            
-            // Toggle sidebar - FIXED: Use proper event delegation
+
+            // Toggle sidebar
             if (menuToggle && sidebar) {
-                menuToggle.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    sidebar.classList.toggle('active'); // Use .active instead of .collapsed
-                    
-                    // Toggle overlay on mobile
-                    if (window.innerWidth <= 992) {
-                        if (sidebar.classList.contains('active')) {
-                            mobileOverlay.classList.add('active');
-                        } else {
-                            mobileOverlay.classList.remove('active');
-                        }
+                menuToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('mobile-open');
+                    if (mobileOverlay) {
+                        mobileOverlay.classList.toggle('active');
                     }
                 });
             }
-            
-            // Close sidebar with close button
+
+            // Close sidebar
             if (sidebarClose) {
                 sidebarClose.addEventListener('click', function() {
-                    sidebar.classList.remove('active');
+                    sidebar.classList.remove('mobile-open');
                     if (mobileOverlay) mobileOverlay.classList.remove('active');
                 });
             }
-            
+
             // Close sidebar when clicking overlay
             if (mobileOverlay) {
                 mobileOverlay.addEventListener('click', function() {
-                    sidebar.classList.remove('active');
+                    sidebar.classList.remove('mobile-open');
                     mobileOverlay.classList.remove('active');
                 });
             }
-            
-            // Close sidebar when clicking outside on mobile - FIXED
+
+            // Close sidebar when clicking outside on mobile
             document.addEventListener('click', function(e) {
-                if (window.innerWidth <= 992 && sidebar && sidebar.classList.contains('active')) {
+                if (window.innerWidth <= 992) {
                     const isClickInsideSidebar = sidebar.contains(e.target);
                     const isClickOnMenuToggle = menuToggle && menuToggle.contains(e.target);
                     
-                    if (!isClickInsideSidebar && !isClickOnMenuToggle) {
-                        sidebar.classList.remove('active');
+                    if (!isClickInsideSidebar && !isClickOnMenuToggle && sidebar.classList.contains('mobile-open')) {
+                        sidebar.classList.remove('mobile-open');
                         if (mobileOverlay) {
                             mobileOverlay.classList.remove('active');
                         }
                     }
                 }
             });
-            
-            // Handle window resize - FIXED
+
+            // Handle window resize
             window.addEventListener('resize', function() {
                 if (window.innerWidth > 992) {
-                    // On desktop, ensure sidebar is visible
-                    if (sidebar) {
-                        sidebar.classList.remove('active');
-                    }
+                    // On desktop, remove mobile classes
+                    sidebar.classList.remove('mobile-open');
                     if (mobileOverlay) {
                         mobileOverlay.classList.remove('active');
                     }
