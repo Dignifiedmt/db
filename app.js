@@ -1,5 +1,5 @@
 // app.js - COMPLETE FIXED FRONTEND FOR INTIZARUL IMAMUL MUNTAZAR
-// VERSION: 6.0.3 - FIXED TAB NAVIGATION & ZONE/Branch DROPDOWNS
+// VERSION: 6.0.4 - FIXED DOUBLE SUBMISSION, MAS'UL AGE VALIDATION & MODAL FUNCTIONS
 // LAST UPDATED: 2024
 
 const CONFIG = {
@@ -1045,22 +1045,28 @@ class App {
         // Setup photo upload
         this.setupPhoto('photoUpload', 'photoInput', 'photoPreview');
         
-        // Set date limits
+        // FIX 2: Set date limits - DIFFERENT FOR MEMBER AND MAS'UL
         const today = new Date();
-        const minDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
-        const maxDate = new Date(today.getFullYear() - 8, today.getMonth(), today.getDate());
+        
+        // Member: 8-100 years
+        const memberMinDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
+        const memberMaxDate = new Date(today.getFullYear() - 8, today.getMonth(), today.getDate());
+        
+        // Mas'ul: 18-100 years  
+        const masulMinDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
+        const masulMaxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
         
         const birthDate = document.getElementById('birthDate');
         const masulBirthDate = document.getElementById('masulBirthDate');
         
         if (birthDate) {
-            birthDate.setAttribute('min', minDate.toISOString().split('T')[0]);
-            birthDate.setAttribute('max', maxDate.toISOString().split('T')[0]);
+            birthDate.setAttribute('min', memberMinDate.toISOString().split('T')[0]);
+            birthDate.setAttribute('max', memberMaxDate.toISOString().split('T')[0]);
         }
         
         if (masulBirthDate) {
-            masulBirthDate.setAttribute('min', minDate.toISOString().split('T')[0]);
-            masulBirthDate.setAttribute('max', maxDate.toISOString().split('T')[0]);
+            masulBirthDate.setAttribute('min', masulMinDate.toISOString().split('T')[0]);
+            masulBirthDate.setAttribute('max', masulMaxDate.toISOString().split('T')[0]);
         }
         
         // Phone validation
@@ -1074,13 +1080,44 @@ class App {
         console.log('Setting up form tabs...');
         this.setupFormTabs();
         
-        // Member form submission
+        // FIX 4: Member form submission - WITH DUPLICATE SUBMISSION PREVENTION
         const memberForm = document.getElementById('memberRegistrationForm');
         if (memberForm) {
-            memberForm.addEventListener('submit', async e => {
+            // Remove any existing event listeners by cloning the form
+            const newMemberForm = memberForm.cloneNode(true);
+            memberForm.parentNode.replaceChild(newMemberForm, memberForm);
+            
+            // Get fresh reference
+            document.getElementById('memberRegistrationForm').addEventListener('submit', async e => {
                 e.preventDefault();
-                console.log('✅ Member form submitted');
-                await this.handleMemberRegistration();
+                console.log('✅ Member form submitted - Single handler');
+                
+                // Prevent double submission
+                const submitBtn = document.querySelector('#memberRegistrationForm button[type="submit"]');
+                if (submitBtn && submitBtn.dataset.submitting === 'true') {
+                    console.log('🛑 Form already submitting, ignoring duplicate');
+                    return;
+                }
+                
+                // Mark as submitting
+                if (submitBtn) {
+                    submitBtn.dataset.submitting = 'true';
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                }
+                
+                try {
+                    await this.handleMemberRegistration();
+                } catch (error) {
+                    console.error('Submission error:', error);
+                } finally {
+                    // Reset button state
+                    if (submitBtn) {
+                        submitBtn.dataset.submitting = 'false';
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fas fa-save"></i> Register Member';
+                    }
+                }
             });
         }
         
@@ -1453,6 +1490,15 @@ class App {
   static async handleMemberRegistration() {
     console.log('🔴 DEBUG: handleMemberRegistration called');
     
+    // FIX 5: 🛑 CRITICAL FIX: Check if already processing
+    if (window.memberRegistrationInProgress) {
+        console.log('⚠️ Registration already in progress');
+        return;
+    }
+    
+    // Set processing flag
+    window.memberRegistrationInProgress = true;
+    
     try {
       // Show loading
       this.loading(true, 'Registering member...');
@@ -1567,10 +1613,13 @@ class App {
       
     } finally {
       this.loading(false);
+      // FIX 5: 🛑 CRITICAL: Clear processing flag
+      window.memberRegistrationInProgress = false;
     }
   }
 
   static async handleMasulRegistration() {
+    // Validate required fields
     const requiredFields = [
       'masulFullName', 'masulFatherName', 'masulBirthDate', 'masulEmail', 'masulPhone1',
       'masulEducationLevel', 'masulResidentialAddress', 'masulZone', 'masulBranch',
@@ -1588,6 +1637,27 @@ class App {
     });
     
     if (!isValid) return;
+    
+    // FIX 3: Validate Mas'ul age (18+ years)
+    const masulBirthDateInput = document.getElementById('masulBirthDate');
+    if (masulBirthDateInput && masulBirthDateInput.value) {
+        const masulBirthDate = new Date(masulBirthDateInput.value);
+        const today = new Date();
+        const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+        
+        if (masulBirthDate > eighteenYearsAgo) {
+            this.error('Mas\'ul must be at least 18 years old');
+            
+            // Reset button state if it exists
+            const submitBtn = document.querySelector('#masulRegistrationForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Register Mas\'ul';
+            }
+            
+            return;
+        }
+    }
     
     if (!document.getElementById('masulDeclaration').checked) {
       this.error('Please accept the declaration');
@@ -1622,6 +1692,7 @@ class App {
       this.success('Mas\'ul registered successfully!');
     } catch (err) {
       console.error('Masul registration error:', err);
+      this.error(err.message || 'Failed to register Mas\'ul');
     } finally {
       this.loading(false);
     }
@@ -2291,17 +2362,11 @@ class App {
     }
   }
 
-  // ============================================
-  // CHANGED: UPDATED loadMasul FUNCTION - FIX 3
-  // ============================================
   static async loadMasul() {
     this.loading(true, 'Loading Mas\'ul...');
     
     try {
-      const res = await this.api('getMembers', { 
-        search: '',
-        type: 'masul' 
-      });
+      const res = await this.api('getMasul', {});
       const masul = res.data || [];
       
       const tbody = document.getElementById('masulTableBody');
@@ -2822,7 +2887,7 @@ class App {
   }
 
   // ============================================
-  // CHANGED: ADDED MISSING MODAL FUNCTIONS - FIX 1
+  // FIX 1: ADDED MISSING MODAL FUNCTIONS
   // ============================================
   static showRegisterMasulModal() {
     window.location.href = 'register.html?masul=true';
@@ -2831,10 +2896,6 @@ class App {
   static showRegisterMemberModal() {
     window.location.href = 'register.html';
   }
-
-  // ============================================
-  // END OF ADDED FUNCTIONS
-  // ============================================
 
   static logout() {
     if (confirm('Are you sure you want to logout?')) {
@@ -2918,4 +2979,4 @@ setTimeout(() => {
 
 // Make App available globally
 window.App = App;
-console.log('✅ App.js loaded successfully with FIXED TAB NAVIGATION & ZONE/BRANCH DROPDOWNS!');
+console.log('✅ App.js loaded successfully with FIXED DOUBLE SUBMISSION, MAS\'UL AGE VALIDATION & MODAL FUNCTIONS!');
