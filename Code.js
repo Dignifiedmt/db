@@ -638,53 +638,78 @@ function handleGetStatistics() {
 // ========================
 function handleGetMembers(data) {
   try {
-    let members = getSheetData('MEMBERS_ONLY');
+    // Check if we're looking for masul or members
+    const isMasul = data.type === 'masul';
+    let members = [];
     
-    // Apply filters
+    if (isMasul) {
+      // Get from MASUL_ONLY sheet
+      const masulData = getSheetData('MASUL_ONLY');
+      // MASUL_ONLY columns: [Global_ID, Recruitment_ID, Full_Name, Email, Phone_1, Zone, Branch, Recruitment_Year, Photo_URL, Registration_Date, Status]
+      
+      members = masulData.map(row => ({
+        id: row[0],
+        recruitmentId: row[1],
+        fullName: row[2],
+        email: row[3],
+        phone: row[4],
+        zone: row[5],
+        branch: row[6],
+        recruitmentYear: row[7],
+        photoUrl: row[8],
+        registrationDate: row[9],
+        status: row[10]
+      }));
+    } else {
+      // Get from MEMBERS_ONLY sheet
+      const membersData = getSheetData('MEMBERS_ONLY');
+      // MEMBERS_ONLY columns: [Global_ID, Recruitment_ID, Full_Name, Gender, Phone_1, Member_Level, Recruitment_Year, Zone, Branch, Photo_URL, Registration_Date, Status]
+      
+      members = membersData.map(row => ({
+        id: row[0],
+        recruitmentId: row[1],
+        fullName: row[2],
+        gender: row[3],
+        phone: row[4],
+        level: row[5],
+        recruitmentYear: row[6],
+        zone: row[7],
+        branch: row[8],
+        photoUrl: row[9],
+        registrationDate: row[10],
+        status: row[11]
+      }));
+    }
+    
+    // Apply filters if provided
     if (data.zone) {
-      members = members.filter(row => row[7] === data.zone);
+      members = members.filter(m => m.zone === data.zone);
     }
     
     if (data.branch) {
-      members = members.filter(row => row[8] === data.branch);
+      members = members.filter(m => m.branch === data.branch);
     }
     
-    if (data.level) {
-      members = members.filter(row => row[5] === data.level);
+    if (data.level && !isMasul) {
+      members = members.filter(m => m.level === data.level);
     }
     
-    if (data.gender) {
-      members = members.filter(row => row[3] === data.gender);
+    if (data.gender && !isMasul) {
+      members = members.filter(m => m.gender === data.gender);
     }
     
     if (data.search) {
       const searchLower = data.search.toLowerCase();
-      members = members.filter(row => 
-        row[2].toLowerCase().includes(searchLower) ||
-        row[0].includes(data.search) ||
-        row[1].includes(data.search)
+      members = members.filter(m => 
+        m.fullName.toLowerCase().includes(searchLower) ||
+        m.id.includes(data.search) ||
+        m.recruitmentId.includes(data.search)
       );
     }
     
-    // Format response
-    const formattedMembers = members.map(row => ({
-      id: row[0],
-      recruitmentId: row[1],
-      fullName: row[2],
-      gender: row[3],
-      phone: row[4],
-      level: row[5],
-      recruitmentYear: row[6],
-      zone: row[7],
-      branch: row[8],
-      photoUrl: row[9],
-      registrationDate: row[10],
-      status: row[11]
-    }));
-    
     return {
-      data: formattedMembers,
-      count: formattedMembers.length
+      data: members,
+      count: members.length
     };
   } catch (error) {
     logError('Failed to get members', error);
@@ -1015,28 +1040,6 @@ function handleBackupSystem() {
         backupUrl: backup.getUrl(),
         backupId: backup.getId(),
         backupName: backupName,
-        timestamp: new Date().toISOString()
-      }
-    };
-  } catch (error) {
-    logError('Backup failed', error);
-    throw new Error(`Backup failed: ${error.message}`);
-  }
-}
-
-// ========================
-// HELPER FUNCTION
-// ========================
-function canPromote(oldLevel, newLevel) {
-  if (!MEMBER_LEVELS.includes(oldLevel) || !MEMBER_LEVELS.includes(newLevel)) {
-    return false;
-  }
-  
-  const oldIndex = LEVEL_HIERARCHY[oldLevel];
-  const newIndex = LEVEL_HIERARCHY[newLevel];
-  
-  return newIndex > oldIndex;
-}ackupName: backupName,
         timestamp: new Date().toISOString()
       }
     };
