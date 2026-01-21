@@ -3,7 +3,7 @@
 // LAST UPDATED: 2024
 
 const CONFIG = {
-  API_URL: localStorage.getItem('iim_api_url') || 'https://script.google.com/macros/s/AKfycbyTOg9VXDLayr8Xrs3t6hjmKU6TFJDFlUCkQVTpbbgLIqdd2cnWvCR2p_4kLYOFj_9b9w/exec',
+  API_URL: localStorage.getItem('iim_api_url') || 'https://script.google.com/macros/s/AKfycbzMF1q-ISJJni2Rjw69J0u2px9bWj61U5eaDJn9T1PzHyI4VEcq2eBb8Fq314PIURqa9w/exec',
   MAX_PHOTO_SIZE: 2 * 1024 * 1024,
   SESSION_TIMEOUT: 30 * 60 * 1000,
   REQUEST_TIMEOUT: 30000
