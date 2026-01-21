@@ -2291,6 +2291,9 @@ class App {
     }
   }
 
+  // ============================================
+  // CHANGED: UPDATED loadMasul FUNCTION - FIX 3
+  // ============================================
   static async loadMasul() {
     this.loading(true, 'Loading Mas\'ul...');
     
@@ -2314,39 +2317,22 @@ class App {
           `;
         } else {
           tbody.innerHTML = masul.map(m => {
-            // Extract properties with fallbacks
-            const id = m.id || m.Global_ID || 'N/A';
-            const recruitmentId = m.recruitmentId || m.Recruitment_ID || 'N/A';
-            const fullName = m.fullName || m.Full_Name || 'N/A';
-            const email = m.email || m.Email || 'N/A';
-            const phone = m.phone || m.Phone_1 || 'N/A';
-            const branch = m.branch || m.Branch || 'N/A';
-            const recruitmentYear = m.recruitmentYear || m.Recruitment_Year || 'N/A';
-            const photoUrl = m.photoUrl || m.Photo_URL || '';
-            
-            // Generate photo HTML
-            const photoHtml = photoUrl ? 
-              `<img src="${this.fixDriveImageUrl(photoUrl)}" class="table-photo" alt="Photo" 
-                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
-              '';
-            
-            const placeholderHtml = `<div class="photo-placeholder" ${photoUrl ? 'style="display:none;"' : ''}>
-              ${(fullName || 'M').charAt(0)}
-            </div>`;
-            
             return `
               <tr>
-                <td>${photoHtml}${placeholderHtml}</td>
-                <td><code>${id}</code></td>
-                <td><code>${recruitmentId}</code></td>
-                <td><strong>${fullName}</strong></td>
-                <td>${email}</td>
-                <td>${phone}</td>
-                <td>${branch}</td>
-                <td>${recruitmentYear}</td>
+                <td>
+                  ${m.photoUrl ? `<img src="${this.fixDriveImageUrl(m.photoUrl)}" class="table-photo" alt="Photo">` : 
+                    `<div class="photo-placeholder">${(m.fullName || 'M').charAt(0)}</div>`}
+                </td>
+                <td><code>${m.id}</code></td>
+                <td><code>${m.recruitmentId}</code></td>
+                <td><strong>${m.fullName}</strong></td>
+                <td>${m.email}</td>
+                <td>${m.phone}</td>
+                <td>${m.branch}</td>
+                <td>${m.recruitmentYear}</td>
                 <td>
                   <div class="action-buttons">
-                    <button class="btn-icon btn-view" onclick="App.viewMember('${id}')" title="View Details">
+                    <button class="btn-icon btn-view" onclick="App.viewMember('${m.id}')" title="View Details">
                       <i class="fas fa-eye"></i>
                     </button>
                   </div>
@@ -2834,6 +2820,21 @@ class App {
       this.loading(false);
     }
   }
+
+  // ============================================
+  // CHANGED: ADDED MISSING MODAL FUNCTIONS - FIX 1
+  // ============================================
+  static showRegisterMasulModal() {
+    window.location.href = 'register.html?masul=true';
+  }
+
+  static showRegisterMemberModal() {
+    window.location.href = 'register.html';
+  }
+
+  // ============================================
+  // END OF ADDED FUNCTIONS
+  // ============================================
 
   static logout() {
     if (confirm('Are you sure you want to logout?')) {
