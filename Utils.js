@@ -47,13 +47,27 @@ const CounterLock = {
       Utilities.sleep(100);
     }
     
-    this.locks[lockKey] = true;
+    this.locks[lockKey] = {
+      acquiredAt: Date.now(),
+      threadId: Utilities.getUuid()
+    };
     return true;
   },
   
   release(counterName) {
     const lockKey = `lock_${counterName}`;
-    delete this.locks[lockKey]; // FIXED: Use delete instead of setting to false
+    if (this.locks[lockKey]) {
+      delete this.locks[lockKey];
+    }
+  },
+  
+  cleanupOldLocks() {
+    const now = Date.now();
+    for (const lockKey in this.locks) {
+      if (this.locks[lockKey] && now - this.locks[lockKey].acquiredAt > UTILS_CONFIG.LOCK_TIMEOUT) {
+        delete this.locks[lockKey];
+      }
+    }
   }
 };
 
@@ -763,7 +777,7 @@ function logActivity(action, description, userRole = '', userBranch = '') {
     appendToSheet('ACTIVITY_LOGS', logEntry);
     return true;
   } catch (error) {
-    console.error('Failed to log activity:', error);
+    logError('Failed to log activity:', error);
     return false;
   }
 }
@@ -840,10 +854,6 @@ function exportUtilsFunctions() {
     utilsSanitizeInput,
     
     // Constants
-    UTILS_CONFIG,
-    UTILS_ZONES
-  };
-}
     UTILS_CONFIG,
     UTILS_ZONES
   };
