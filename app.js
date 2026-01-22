@@ -78,7 +78,7 @@ class App {
         padding: 20px;
       `;
       
-      const defaultUrl = 'https://script.google.com/macros/s/AKfycbweAMLu87vyBN-2mpW7nx5aPtsFJqObtAQm8opAaWRRycJW1tC8IqofToulRZc2JDkI/exec';
+      const defaultUrl = 'https://script.google.com/macros/s/AKfycbzMF1q-ISJJni2Rjw69J0u2px9bWj61U5eaDJn9T1PzHyI4VEcq2eBb8Fq314PIURqa9w/exec';
       
       modal.innerHTML = `
         <div class="config-modal-content" style="
@@ -1190,7 +1190,14 @@ class App {
       this.updateTabButtons(stepId);
     };
     
-    // Step click handlers
+    // Step click handlers - SIMPLE
+    document.querySelectorAll('.step').forEach(step => {
+      // Remove existing listeners
+      const newStep = step.cloneNode(true);
+      step.parentNode.replaceChild(newStep, step);
+    });
+    
+    // Re-get elements after cloning
     document.querySelectorAll('.step').forEach(step => {
       step.addEventListener('click', () => {
         const stepId = step.getAttribute('data-step');
@@ -1198,7 +1205,14 @@ class App {
       });
     });
     
-    // Next button handlers
+    // Next button handlers - SIMPLE
+    document.querySelectorAll('.next-tab').forEach(btn => {
+      // Remove existing listeners
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+    });
+    
+    // Re-get and attach
     document.querySelectorAll('.next-tab').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -1217,7 +1231,14 @@ class App {
       });
     });
     
-    // Previous button handlers
+    // Previous button handlers - SIMPLE
+    document.querySelectorAll('.prev-tab').forEach(btn => {
+      // Remove existing listeners
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+    });
+    
+    // Re-get and attach
     document.querySelectorAll('.prev-tab').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -1432,6 +1453,10 @@ class App {
   static async handleMemberRegistration() {
     console.log('🔴 DEBUG: handleMemberRegistration called');
     
+    // ⭐⭐⭐ ADD THESE 2 LINES RIGHT HERE ⭐⭐⭐
+    if (window.formSubmitting) return;
+    window.formSubmitting = true;
+    
     try {
       // Show loading
       this.loading(true, 'Registering member...');
@@ -1545,7 +1570,9 @@ class App {
       this.error(userMessage);
       
     } finally {
-      this.loading(false);
+        // ⭐⭐⭐ ADD THIS LINE RIGHT HERE ⭐⭐⭐
+        window.formSubmitting = false;
+        this.loading(false);
     }
   }
 
@@ -2271,7 +2298,7 @@ class App {
   }
 
   // ============================================
-  // ORIGINAL WORKING loadMasul FUNCTION
+  // CHANGED: UPDATED loadMasul FUNCTION - FIX 3
   // ============================================
   static async loadMasul() {
     this.loading(true, 'Loading Mas\'ul...');
@@ -2801,7 +2828,7 @@ class App {
   }
 
   // ============================================
-  // ADDED MISSING MODAL FUNCTIONS
+  // CHANGED: ADDED MISSING MODAL FUNCTIONS - FIX 1
   // ============================================
   static showRegisterMasulModal() {
     window.location.href = 'register.html?masul=true';
@@ -2810,6 +2837,10 @@ class App {
   static showRegisterMemberModal() {
     window.location.href = 'register.html';
   }
+
+  // ============================================
+  // END OF ADDED FUNCTIONS
+  // ============================================
 
   static logout() {
     if (confirm('Are you sure you want to logout?')) {
