@@ -1,5 +1,5 @@
 // app.js - COMPLETE FIXED FRONTEND FOR INTIZARUL IMAMUL MUNTAZAR
-// VERSION: 6.0.3 - FIXED TAB NAVIGATION & ZONE/Branch DROPDOWNS
+// VERSION: 6.0.4 - ADDED SUBMISSION GUARD & DASHBOARD BUTTON
 // LAST UPDATED: 2024
 
 const CONFIG = {
@@ -1031,6 +1031,12 @@ class App {
             masulToggleContainer.style.display = 'block';
         }
         
+        // ⭐ Show dashboard button for admin
+        const dashboardBtn = document.getElementById('dashboardBtn');
+        if (dashboardBtn && userRole === 'admin') {
+            dashboardBtn.style.display = 'inline-flex';
+        }
+        
         // ✅✅✅ CRITICAL: Initialize dropdowns FIRST
         console.log('Initializing dropdowns...');
         
@@ -1576,7 +1582,17 @@ class App {
     }
   }
 
+  // ============================================
+  // FIXED: ADDED SUBMISSION GUARD FOR MAS'UL FORM
+  // ============================================
   static async handleMasulRegistration() {
+    // ⭐ PREVENT DOUBLE SUBMISSION
+    if (window.masulFormSubmitting) return;
+    window.masulFormSubmitting = true;
+
+    const submitBtn = document.getElementById('submitMasulBtn');
+    if (submitBtn) submitBtn.disabled = true;
+
     const requiredFields = [
       'masulFullName', 'masulFatherName', 'masulBirthDate', 'masulEmail', 'masulPhone1',
       'masulEducationLevel', 'masulResidentialAddress', 'masulZone', 'masulBranch',
@@ -1593,10 +1609,16 @@ class App {
       }
     });
     
-    if (!isValid) return;
+    if (!isValid) {
+      window.masulFormSubmitting = false;
+      if (submitBtn) submitBtn.disabled = false;
+      return;
+    }
     
     if (!document.getElementById('masulDeclaration').checked) {
       this.error('Please accept the declaration');
+      window.masulFormSubmitting = false;
+      if (submitBtn) submitBtn.disabled = false;
       return;
     }
     
@@ -1629,6 +1651,8 @@ class App {
     } catch (err) {
       console.error('Masul registration error:', err);
     } finally {
+      window.masulFormSubmitting = false;
+      if (submitBtn) submitBtn.disabled = false;
       this.loading(false);
     }
   }
