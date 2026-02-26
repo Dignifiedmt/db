@@ -1,1064 +1,590 @@
-// Code.gs - BACKEND FOR INTIZARUL IMAMUL MUNTAZAR
-// COMPATIBLE WITH: Utils.gs (unchanged)
+/**
+ * INTIZARUL IMAMUL MUNTAZAR – Backend
+ * All endpoints are exposed via doPost/doGet with CORS.
+ */
 
-// ========================
-// SYSTEM CONFIGURATION
-// ========================
-const CONFIG = {
-  SYSTEM_NAME: 'Intizarul Imamul Muntazar',
-  VERSION: '4.1.0',
-  DEFAULT_ADMIN_CODE: 'Muntazirun',
-  DEFAULT_MASUL_CODE: 'Muntazir'
-};
-
-// ========================
-// ZONES AND BRANCHES
-// ========================
-const ZONES = {
-  'SOKOTO': ['Sokoto', 'Mafara', 'Yaure', 'Illela', 'Zuru', 'Yabo'],
-  'KADUNA': ['Kaduna', 'Jaji', 'Mjos'],
-  'ABUJA': ['Maraba', 'Lafia', 'Keffi/Doma', 'Minna', 'Suleja'],
-  'ZARIA': ['Zaria', 'Danja', 'Dutsen Wai', 'Kudan', 'Soba'],
-  'KANO': ['Kano', 'Kazaure', 'Potiskum', 'Gashuwa'],
-  'BAUCHI': ['Bauchi', 'Gombe', 'Azare', 'Jos'],
-  'MALUMFASHI': ['Malumfashi', 'Bakori', 'Katsina'],
-  'NIGER': ['Niyame', 'Maradi'],
-  'QUM': ['Qum']
-};
-
-const MEMBER_LEVELS = ['Bakiyatullah', 'Ansarullah', 'Ghalibun', 'Graduate'];
-const LEVEL_HIERARCHY = {
-  'Bakiyatullah': 1,
-  'Ansarullah': 2,
-  'Ghalibun': 3,
-  'Graduate': 4
-};
-
-// ========================
-// SAFE RESPONSE HELPERS
-// ========================
-function ok(payload = {}) {
-  return ContentService.createTextOutput(
-    JSON.stringify({
-      success: true,
-      timestamp: new Date().toISOString(),
-      ...payload
-    })
-  );
-}
-
-function fail(message) {
-  return ContentService.createTextOutput(
-    JSON.stringify({
-      success: false,
-      timestamp: new Date().toISOString(),
-      message: message
-    })
-  );
-}
-
-// ========================
-// INPUT VALIDATION
-// ========================
-function sanitizeInput(input) {
-  if (typeof input !== 'string') return input;
-  return input
-    .replace(/[<>]/g, '')
-    .replace(/javascript:/gi, '')
-    .replace(/on\w+=/gi, '')
-    .trim();
-}
-
-function validateEmail(email) {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
-}
-
-function validatePhone(phone) {
-  return /^[0-9+\s\-\(\)]{10,15}$/.test(phone);
-}
-
-function sanitizeRequest(request) {
-  for (const key in request) {
-    if (typeof request[key] === 'string') {
-      request[key] = sanitizeInput(request[key]);
-    } else if (Array.isArray(request[key])) {
-      request[key] = request[key].map(item => 
-        typeof item === 'string' ? sanitizeInput(item) : item
-      );
-    } else if (typeof request[key] === 'object' && request[key] !== null) {
-      sanitizeRequest(request[key]);
-    }
-  }
-}
-
-// ========================
-// HEALTH CHECK (GET)
-// ========================
-function doGet() {
-  try {
-    const props = PropertiesService.getScriptProperties();
-    const initialized = props.getProperty('SYSTEM_INITIALIZED') === 'true';
-    
-    return ok({
-      system: CONFIG.SYSTEM_NAME,
-      status: 'ONLINE',
-      version: CONFIG.VERSION,
-      initialized: initialized,
-      timestamp: new Date().toISOString(),
-      sheets: {
-        hasSpreadsheet: !!props.getProperty('SPREADSHEET_ID'),
-        spreadsheetId: props.getProperty('SPREADSHEET_ID') || 'Not set'
-      },
-      zones: ZONES,
-      memberLevels: MEMBER_LEVELS,
-      endpoints: [
-        'initializeSystem',
-        'login',
-        'registerMember',
-        'registerMasul',
-        'getStatistics',
-        'getMembers',
-        'getMemberDetails',
-        'promoteMember',
-        'transferMember',
-        'getRecentActivity',
-        'updateSettings',
-        'exportData',
-        'backupSystem',
-        'getAllZonesBranches'
-      ]
-    });
-  } catch (error) {
-    console.error('GET error:', error);
-    return fail(`GET error: ${error.message}`);
-  }
-}
-
-// ========================
-// MAIN ENTRY (POST ONLY)
-// ========================
 function doPost(e) {
+  return handleRequest(e);
+}
+function doGet(e) {
+  return handleRequest(e);
+}
+
+function handleRequest(e) {
+  // Create a text output with CORS headers
+  const output = ContentService.createTextOutput();
+  output.setHeader('Access-Control-Allow-Origin', '*');
+  output.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  output.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Handle preflight OPTIONS request
+  if (e && e.postData === undefined) {
+    return output.setContent(''); // empty body, but headers are set
+  }
+
   try {
-    // Log the incoming request
-    console.log('POST request received, parameters:', Object.keys(e?.parameter || {}));
-    
-    if (!e || !e.parameter || !e.parameter.data) {
-      return fail('Invalid request format. Use FormData with "data" parameter.');
-    }
+    ensureSheetsExist(); // auto-create sheets and preload data
 
-    // Parse the FormData JSON
-    let payload;
-    try {
-      payload = JSON.parse(e.parameter.data);
-    } catch (parseError) {
-      console.error('Failed to parse JSON:', e.parameter.data);
-      return fail('Invalid JSON in request data');
-    }
-    
-    const action = payload.action;
-    
-    if (!action) {
-      return fail('Action is required');
-    }
+    const params = JSON.parse(e.postData.contents);
+    const action = params.action;
+    let result;
 
-    // Sanitize the request
-    sanitizeRequest(payload);
-    
-    console.log(`Processing action: ${action}`);
-
-    // Route to appropriate handler
     switch (action) {
-      case 'initializeSystem':
-        return ok(handleInitializeSystem());
       case 'login':
-        return ok(handleLogin(payload));
+        result = login(params.role, params.code);
+        break;
       case 'registerMember':
-        return ok(handleRegisterMember(payload));
+        result = registerMember(params.data, params.user);
+        break;
       case 'registerMasul':
-        return ok(handleRegisterMasul(payload));
-      case 'getStatistics':
-        return ok(handleGetStatistics());
+        result = registerMasul(params.data, params.user);
+        break;
       case 'getMembers':
-        return ok(handleGetMembers(payload));
-      case 'getMemberDetails':
-        return ok(handleGetMemberDetails(payload));
+        result = getMembers(params.user, params.page, params.pageSize);
+        break;
+      case 'getMasuls':
+        result = getMasuls(params.user, params.page, params.pageSize);
+        break;
+      case 'getZones':
+        result = getZones(params.user);
+        break;
+      case 'getBranches':
+        result = getBranches(params.user, params.zone);
+        break;
       case 'promoteMember':
-        return ok(handlePromoteMember(payload));
+        result = promoteMember(params.intizarId, params.user);
+        break;
+      case 'promoteMasul':
+        result = promoteMasul(params.intizarId, params.user);
+        break;
       case 'transferMember':
-        return ok(handleTransferMember(payload));
-      case 'getRecentActivity':
-        return ok(handleGetRecentActivity());
-      case 'updateSettings':
-        return ok(handleUpdateSettings(payload));
+        result = transferMember(params.intizarId, params.newBranchCode, params.user);
+        break;
+      case 'transferMasul':
+        result = transferMasul(params.intizarId, params.newBranchCode, params.user);
+        break;
+      case 'addZone':
+        result = addZone(params.zoneName, params.user);
+        break;
+      case 'editZone':
+        result = editZone(params.zoneId, params.newName, params.user);
+        break;
+      case 'disableZone':
+        result = disableZone(params.zoneId, params.user);
+        break;
+      case 'enableZone':
+        result = enableZone(params.zoneId, params.user);
+        break;
+      case 'addBranch':
+        result = addBranch(params.branchName, params.zoneName, params.user);
+        break;
+      case 'editBranch':
+        result = editBranch(params.branchCode, params.newName, params.newZone, params.user);
+        break;
+      case 'disableBranch':
+        result = disableBranch(params.branchCode, params.user);
+        break;
+      case 'enableBranch':
+        result = enableBranch(params.branchCode, params.user);
+        break;
+      case 'getAuditLog':
+        result = getAuditLog(params.user);
+        break;
+      case 'getConfig':
+        result = getConfig(params.key, params.user);
+        break;
+      case 'updateConfig':
+        result = updateConfig(params.key, params.value, params.user);
+        break;
       case 'exportData':
-        return ok(handleExportData(payload));
-      case 'backupSystem':
-        return ok(handleBackupSystem());
-      case 'getAllZonesBranches':
-        return ok({ data: ZONES });
-      default:
-        return fail(`Unknown action: ${action}`);
-    }
-  } catch (error) {
-    console.error('Global error in doPost:', error);
-    return fail(`Server error: ${error.message}`);
-  }
-}
-
-// ========================
-// SYSTEM INITIALIZATION
-// ========================
-function handleInitializeSystem() {
-  try {
-    const props = PropertiesService.getScriptProperties();
-    
-    if (props.getProperty('SYSTEM_INITIALIZED') === 'true') {
-      return {
-        message: 'System already initialized',
-        data: { initialized: true }
-      };
-    }
-    
-    const ss = SpreadsheetApp.create(`${CONFIG.SYSTEM_NAME}_Database_${new Date().getFullYear()}`);
-    props.setProperty('SPREADSHEET_ID', ss.getId());
-    
-    // Initialize all sheets using Utils functions
-    createAllSheets(ss);
-    initializeSettings(ss);
-    createDriveFolders();
-    
-    props.setProperty('SYSTEM_INITIALIZED', 'true');
-    
-    // Log the activity
-    logToConsole('System initialized successfully');
-    
-    return {
-      message: 'System initialized successfully',
-      data: {
-        spreadsheetUrl: ss.getUrl(),
-        spreadsheetId: ss.getId(),
-        initialized: true
-      }
-    };
-  } catch (error) {
-    logError('System initialization failed', error);
-    throw new Error(`System initialization failed: ${error.message}`);
-  }
-}
-
-// ========================
-// LOGIN HANDLER
-// ========================
-function handleLogin(data) {
-  try {
-    const { role, accessCode, branch } = data;
-    
-    if (!role || !accessCode) {
-      throw new Error('Role and access code are required');
-    }
-    
-    let adminCode = CONFIG.DEFAULT_ADMIN_CODE;
-    let masulCode = CONFIG.DEFAULT_MASUL_CODE;
-    
-    // Try to get codes from settings
-    try {
-      const settings = getSheetData('SETTINGS');
-      const adminRow = settings.find(row => row[0] === 'Admin_Access_Code');
-      const masulRow = settings.find(row => row[0] === 'Masul_Access_Code');
-      
-      if (adminRow) adminCode = adminRow[1];
-      if (masulRow) masulCode = masulRow[1];
-    } catch (e) {
-      console.log('Using default access codes');
-    }
-    
-    if (role === 'admin') {
-      if (accessCode !== adminCode) {
-        throw new Error('Invalid admin access code');
-      }
-      
-      logToConsole(`Admin logged in successfully`);
-      return {
-        message: 'Login successful',
-        data: {
-          role: 'admin',
-          branch: 'System',
-          timestamp: new Date().toISOString()
-        }
-      };
-    } else if (role === 'masul') {
-      if (accessCode !== masulCode) {
-        throw new Error('Invalid masul access code');
-      }
-      
-      if (!branch) {
-        throw new Error('Branch is required for masul login');
-      }
-      
-      // Validate branch exists
-      const allBranches = Object.values(ZONES).flat();
-      if (!allBranches.includes(branch)) {
-        throw new Error('Invalid branch selected');
-      }
-      
-      logToConsole(`Masul logged in from ${branch} successfully`);
-      return {
-        message: 'Login successful',
-        data: {
-          role: 'masul',
-          branch: branch,
-          branchCode: generateBranchCode(branch),
-          timestamp: new Date().toISOString()
-        }
-      };
-    } else {
-      throw new Error('Invalid role');
-    }
-  } catch (error) {
-    logError('Login failed', error);
-    throw new Error(`Login failed: ${error.message}`);
-  }
-}
-
-// ========================
-// MEMBER REGISTRATION
-// ========================
-function handleRegisterMember(data) {
-  try {
-    // Authorization check
-    const userRole = data.userRole;
-    if (userRole === 'masul' && data.branch !== data.userBranch) {
-      throw new Error('Branch Masul can only register members in their own branch');
-    }
-    
-    // Validate required fields
-    const requiredFields = [
-      'fullName', 'firstName', 'fatherName', 'birthDate', 'gender',
-      'residentialAddress', 'phone1', 'memberLevel', 'zone', 'branch',
-      'recruitmentYear'
-    ];
-    
-    for (const field of requiredFields) {
-      if (!data[field]) {
-        throw new Error(`Missing required field: ${field}`);
-      }
-    }
-    
-    // Validate phone
-    if (!validatePhone(data.phone1)) {
-      throw new Error('Invalid phone number format');
-    }
-    
-    if (data.phone2 && !validatePhone(data.phone2)) {
-      throw new Error('Invalid secondary phone number format');
-    }
-    
-    // Check age - FIXED: Changed from 10 to 8 years
-    const birthDate = new Date(data.birthDate);
-    const today = new Date();
-    const minAge = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
-    const maxAge = new Date(today.getFullYear() - 8, today.getMonth(), today.getDate()); // FIXED: Changed from 10 to 8
-    
-    if (birthDate < minAge || birthDate > maxAge) {
-      throw new Error('Age must be between 8 and 100 years');
-    }
-    
-    // Check for duplicates
-    const allData = getSheetData('ALL_MEMBERS');
-    const isDuplicate = allData.some(row => 
-      row[18] === data.phone1 || 
-      (row[3] === data.fullName && row[5] === data.fatherName)
-    );
-    
-    if (isDuplicate) {
-      throw new Error('Member already registered with same phone or name');
-    }
-    
-    // Generate IDs using Utils functions
-    const globalId = getNextGlobalId(userRole || 'System');
-    const branchCode = generateBranchCode(data.branch);
-    const memberSerial = getNextMemberSerial(branchCode, userRole || 'System');
-    const recruitmentId = `INT/${branchCode}/${data.recruitmentYear}/${memberSerial.toString().padStart(3, '0')}`;
-    
-    // Upload photo if provided
-    let photoUrl = '';
-    if (data.photoBase64) {
-      photoUrl = uploadImage(data.photoBase64, data.branch, data.recruitmentYear);
-    }
-    
-    // Prepare row
-    const row = [
-      globalId,                    // Global_ID
-      recruitmentId,              // Recruitment_ID
-      'Member',                   // Type
-      data.fullName,              // Full_Name
-      data.firstName,             // First_Name
-      data.fatherName,            // Father_Name
-      data.grandfatherName || '', // Grandfather_Name
-      data.birthDate,             // Birth_Date
-      data.gender,                // Gender
-      data.residentialAddress,    // Residential_Address
-      data.neighborhood || '',    // Neighborhood
-      data.localGovernment || '', // Local_Government
-      data.state || '',           // State
-      data.parentsGuardians || '', // Parents_Guardians
-      data.parentAddress || '',   // Parent_Address
-      data.parentNeighborhood || '', // Parent_Neighborhood
-      data.parentLGA || '',       // Parent_LGA
-      data.parentState || '',     // Parent_State
-      data.phone1,                // Phone_1
-      data.phone2 || '',          // Phone_2
-      '',                         // Email
-      '',                         // Education_Level
-      '',                         // Course_Studying
-      data.memberLevel,           // Member_Level
-      data.zone,                  // Zone
-      data.branch,                // Branch
-      branchCode,                 // Branch_Code
-      data.recruitmentYear,       // Recruitment_Year
-      photoUrl,                   // Photo_URL
-      new Date().toISOString(),   // Registration_Date
-      new Date().toISOString(),   // Last_Updated
-      'Active',                   // Status
-      ''                          // Notes
-    ];
-    
-    // Append to sheets using Utils functions
-    appendToSheet('ALL_MEMBERS', row, userRole || 'System');
-    appendToSheet('MEMBERS_ONLY', getMemberSubset(row), userRole || 'System');
-    appendToSheet(`BRANCH_${branchCode}`, getBranchSubset(row), userRole || 'System');
-    
-    // Log activity
-    logToConsole(`Registered member ${globalId} (${data.fullName}) in ${data.branch}`);
-    
-    return {
-      message: 'Member registered successfully',
-      data: {
-        globalId: globalId,
-        recruitmentId: recruitmentId,
-        fullName: data.fullName,
-        branch: data.branch,
-        level: data.memberLevel,
-        photoUrl: photoUrl,
-        date: new Date().toISOString()
-      }
-    };
-  } catch (error) {
-    logError('Member registration failed', error);
-    throw new Error(`Member registration failed: ${error.message}`);
-  }
-}
-
-// ========================
-// MAS'UL REGISTRATION
-// ========================
-function handleRegisterMasul(data) {
-  try {
-    // Validate required fields
-    const requiredFields = [
-      'fullName', 'fatherName', 'birthDate', 'email', 'phone1',
-      'educationLevel', 'residentialAddress', 'zone', 'branch',
-      'recruitmentYear'
-    ];
-    
-    for (const field of requiredFields) {
-      if (!data[field]) {
-        throw new Error(`Missing required field: ${field}`);
-      }
-    }
-    
-    // Validate email and phone
-    if (!validateEmail(data.email)) {
-      throw new Error('Invalid email format');
-    }
-    
-    if (!validatePhone(data.phone1)) {
-      throw new Error('Invalid phone number format');
-    }
-    
-    if (!data.declaration) {
-      throw new Error('Declaration/commitment must be accepted');
-    }
-    
-    // ADDED: Validate age for Mas'ul (8-100 years)
-    const masulBirthDate = new Date(data.birthDate);
-    const masulToday = new Date();
-    const masulMinAge = new Date(masulToday.getFullYear() - 100, masulToday.getMonth(), masulToday.getDate());
-    const masulMaxAge = new Date(masulToday.getFullYear() - 8, masulToday.getMonth(), masulToday.getDate());
-    
-    if (masulBirthDate < masulMinAge || masulBirthDate > masulMaxAge) {
-      throw new Error('Masul age must be between 8 and 100 years');
-    }
-    
-    // Check for duplicates
-    const allData = getSheetData('ALL_MEMBERS');
-    const isDuplicate = allData.some(row => 
-      row[20] === data.email || 
-      row[18] === data.phone1
-    );
-    
-    if (isDuplicate) {
-      throw new Error('Masul already registered with same email or phone');
-    }
-    
-    // Generate IDs
-    const globalId = getNextGlobalId('admin');
-    const branchCode = generateBranchCode(data.branch);
-    const masulSerial = getNextMasulSerial('admin');
-    const recruitmentId = `IIM/${branchCode}/${data.recruitmentYear}/${masulSerial.toString().padStart(3, '0')}`;
-    
-    // Upload photo if provided
-    let photoUrl = '';
-    if (data.photoBase64) {
-      photoUrl = uploadImage(data.photoBase64, data.branch, data.recruitmentYear);
-    }
-    
-    // Prepare row
-    const row = [
-      globalId,                          // Global_ID
-      recruitmentId,                    // Recruitment_ID
-      'Masul',                          // Type
-      data.fullName,                    // Full_Name
-      '',                               // First_Name
-      data.fatherName,                  // Father_Name
-      '',                               // Grandfather_Name
-      data.birthDate,                   // Birth_Date
-      data.gender || '',                // Gender - FIXED: Added gender field
-      data.residentialAddress,          // Residential_Address
-      '',                               // Neighborhood
-      '',                               // Local_Government
-      '',                               // State
-      '',                               // Parents_Guardians
-      '',                               // Parent_Address
-      '',                               // Parent_Neighborhood
-      '',                               // Parent_LGA
-      '',                               // Parent_State
-      data.phone1,                      // Phone_1
-      data.phone2 || '',                // Phone_2
-      data.email,                       // Email
-      data.educationLevel,              // Education_Level
-      data.courseStudying || '',        // Course_Studying
-      '',                               // Member_Level
-      data.zone,                        // Zone
-      data.branch,                      // Branch
-      branchCode,                       // Branch_Code
-      data.recruitmentYear,             // Recruitment_Year
-      photoUrl,                         // Photo_URL
-      new Date().toISOString(),         // Registration_Date
-      new Date().toISOString(),         // Last_Updated
-      'Active',                         // Status
-      'Declared'                        // Notes
-    ];
-    
-    // Append to sheets
-    appendToSheet('ALL_MEMBERS', row, 'admin');
-    appendToSheet('MASUL_ONLY', getMasulSubset(row), 'admin');
-    
-    // Log activity
-    logToConsole(`Registered Masul ${globalId} (${data.fullName}) in ${data.branch}`);
-    
-    return {
-      message: 'Masul registered successfully',
-      data: {
-        globalId: globalId,
-        recruitmentId: recruitmentId,
-        fullName: data.fullName,
-        branch: data.branch,
-        email: data.email,
-        photoUrl: photoUrl,
-        date: new Date().toISOString()
-      }
-    };
-  } catch (error) {
-    logError('Masul registration failed', error);
-    throw new Error(`Masul registration failed: ${error.message}`);
-  }
-}
-
-// ========================
-// STATISTICS
-// ========================
-function handleGetStatistics() {
-  try {
-    const allData = getSheetData('ALL_MEMBERS');
-    const members = allData.filter(row => row[2] === 'Member' && row[31] === 'Active');
-    const masul = allData.filter(row => row[2] === 'Masul' && row[31] === 'Active');
-    
-    const totalMembers = members.length;
-    const totalMasul = masul.length;
-    const brothers = members.filter(row => row[8] === 'Brother').length;
-    const sisters = members.filter(row => row[8] === 'Sister').length;
-    
-    const membersPerBranch = {};
-    const membersPerLevel = {};
-    const membersPerZone = {};
-    
-    members.forEach(row => {
-      const branch = row[25];
-      const zone = row[24];
-      const level = row[23];
-      
-      membersPerBranch[branch] = (membersPerBranch[branch] || 0) + 1;
-      membersPerZone[zone] = (membersPerZone[zone] || 0) + 1;
-      membersPerLevel[level] = (membersPerLevel[level] || 0) + 1;
-    });
-    
-    // Recent members (last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    const recentMembers = members.filter(row => {
-      const regDate = new Date(row[29]);
-      return regDate >= thirtyDaysAgo;
-    }).length;
-    
-    return {
-      data: {
-        totalMembers,
-        totalMasul,
-        brothers,           // FIXED: Added brothers
-        sisters,           // FIXED: Added sisters
-        recentMembers,
-        membersPerBranch,
-        membersPerZone,
-        membersPerLevel,
-        totalBranches: Object.keys(membersPerBranch).length,
-        totalZones: Object.keys(ZONES).length
-      }
-    };
-  } catch (error) {
-    logError('Failed to get statistics', error);
-    throw new Error(`Failed to get statistics: ${error.message}`);
-  }
-}
-
-// ========================
-// GET MEMBERS WITH FILTERS
-// ========================
-function handleGetMembers(data) {
-  try {
-    // Check if we're looking for masul or members
-    const isMasul = data.type === 'masul';
-    let members = [];
-    
-    if (isMasul) {
-      // Get from MASUL_ONLY sheet
-      const masulData = getSheetData('MASUL_ONLY');
-      // MASUL_ONLY columns: [Global_ID, Recruitment_ID, Full_Name, Email, Phone_1, Zone, Branch, Recruitment_Year, Photo_URL, Registration_Date, Status]
-      
-      members = masulData.map(row => ({
-        id: row[0],
-        recruitmentId: row[1],
-        fullName: row[2],
-        email: row[3],
-        phone: row[4],
-        zone: row[5],
-        branch: row[6],
-        recruitmentYear: row[7],
-        photoUrl: row[8],
-        registrationDate: row[9],
-        status: row[10]
-      }));
-    } else {
-      // Get from MEMBERS_ONLY sheet
-      const membersData = getSheetData('MEMBERS_ONLY');
-      // MEMBERS_ONLY columns: [Global_ID, Recruitment_ID, Full_Name, Gender, Phone_1, Member_Level, Recruitment_Year, Zone, Branch, Photo_URL, Registration_Date, Status]
-      
-      members = membersData.map(row => ({
-        id: row[0],
-        recruitmentId: row[1],
-        fullName: row[2],
-        gender: row[3],
-        phone: row[4],
-        level: row[5],
-        recruitmentYear: row[6],
-        zone: row[7],
-        branch: row[8],
-        photoUrl: row[9],
-        registrationDate: row[10],
-        status: row[11]
-      }));
-    }
-    
-    // Apply filters if provided
-    if (data.zone) {
-      members = members.filter(m => m.zone === data.zone);
-    }
-    
-    if (data.branch) {
-      members = members.filter(m => m.branch === data.branch);
-    }
-    
-    if (data.level && !isMasul) {
-      members = members.filter(m => m.level === data.level);
-    }
-    
-    if (data.gender && !isMasul) {
-      members = members.filter(m => m.gender === data.gender);
-    }
-    
-    if (data.search) {
-      const searchLower = data.search.toLowerCase();
-      members = members.filter(m => 
-        m.fullName.toLowerCase().includes(searchLower) ||
-        m.id.includes(data.search) ||
-        m.recruitmentId.includes(data.search)
-      );
-    }
-    
-    return {
-      data: members,
-      count: members.length
-    };
-  } catch (error) {
-    logError('Failed to get members', error);
-    throw new Error(`Failed to get members: ${error.message}`);
-  }
-}
-
-// ========================
-// GET MEMBER DETAILS
-// ========================
-function handleGetMemberDetails(data) {
-  try {
-    const { memberId } = data;
-    
-    if (!memberId) {
-      throw new Error('Member ID is required');
-    }
-    
-    const allData = getSheetData('ALL_MEMBERS');
-    const member = allData.find(row => row[0] === memberId);
-    
-    if (!member) {
-      throw new Error('Member not found');
-    }
-    
-    const headers = getHeadersForSheet('ALL_MEMBERS');
-    const memberDetails = {};
-    
-    headers.forEach((header, index) => {
-      memberDetails[header] = member[index] || '';
-    });
-    
-    return {
-      data: memberDetails
-    };
-  } catch (error) {
-    logError('Failed to get member details', error);
-    throw new Error(`Failed to get member details: ${error.message}`);
-  }
-}
-
-// ========================
-// PROMOTE MEMBER
-// ========================
-function handlePromoteMember(data) {
-  try {
-    const { memberId, newLevel, notes = '', userRole } = data;
-    
-    if (!memberId || !newLevel) {
-      throw new Error('Member ID and new level are required');
-    }
-    
-    if (!MEMBER_LEVELS.includes(newLevel)) {
-      throw new Error(`Invalid level. Must be one of: ${MEMBER_LEVELS.join(', ')}`);
-    }
-    
-    // Get current member details
-    const allData = getSheetData('ALL_MEMBERS');
-    const member = allData.find(row => row[0] === memberId);
-    
-    if (!member) {
-      throw new Error('Member not found');
-    }
-    
-    const oldLevel = member[23]; // Member_Level index
-    const fullName = member[3]; // Full_Name index
-    
-    // Check promotion validity
-    const oldIndex = LEVEL_HIERARCHY[oldLevel];
-    const newIndex = LEVEL_HIERARCHY[newLevel];
-    
-    if (newIndex <= oldIndex) {
-      throw new Error(`Cannot promote from ${oldLevel} to ${newLevel}`);
-    }
-    
-    // Update the member level
-    updateRowInSheet('ALL_MEMBERS', memberId, 'Global_ID', {
-      'Member_Level': newLevel,
-      'Last_Updated': new Date()
-    }, userRole || 'System');
-    
-    // Update related sheets
-    updateRelatedSheets(memberId);
-    
-    // Log promotion
-    appendToSheet('PROMOTION_LOGS', [
-      memberId,
-      oldLevel,
-      newLevel,
-      new Date(),
-      userRole || 'Admin',
-      notes || 'Level promotion',
-      fullName
-    ], userRole || 'System');
-    
-    logToConsole(`Promoted member ${memberId} from ${oldLevel} to ${newLevel}`);
-    
-    return {
-      message: 'Member promoted successfully',
-      data: {
-        memberId,
-        oldLevel,
-        newLevel,
-        date: new Date().toISOString()
-      }
-    };
-  } catch (error) {
-    logError('Promotion failed', error);
-    throw new Error(`Promotion failed: ${error.message}`);
-  }
-}
-
-// ========================
-// TRANSFER MEMBER
-// ========================
-function handleTransferMember(data) {
-  try {
-    const { memberId, newBranch, notes = '', userRole } = data;
-    
-    if (!memberId || !newBranch) {
-      throw new Error('Member ID and new branch are required');
-    }
-    
-    const allBranches = Object.values(ZONES).flat();
-    if (!allBranches.includes(newBranch)) {
-      throw new Error('Invalid branch');
-    }
-    
-    // Get current member details
-    const allData = getSheetData('ALL_MEMBERS');
-    const member = allData.find(row => row[0] === memberId);
-    
-    if (!member) {
-      throw new Error('Member not found');
-    }
-    
-    const oldBranch = member[25]; // Branch index
-    const fullName = member[3]; // Full_Name index
-    
-    if (oldBranch === newBranch) {
-      throw new Error('Member is already in this branch');
-    }
-    
-    const newBranchCode = generateBranchCode(newBranch);
-    
-    // Update the member's branch
-    updateRowInSheet('ALL_MEMBERS', memberId, 'Global_ID', {
-      'Branch': newBranch,
-      'Branch_Code': newBranchCode,
-      'Last_Updated': new Date()
-    }, userRole || 'System');
-    
-    // Update branch sheets
-    updateBranchSheetsOnTransfer(memberId, oldBranch, newBranch);
-    updateRelatedSheets(memberId);
-    
-    // Log transfer
-    appendToSheet('TRANSFER_LOGS', [
-      memberId,
-      oldBranch,
-      newBranch,
-      new Date(),
-      userRole || 'Admin',
-      notes || 'Branch transfer',
-      fullName
-    ], userRole || 'System');
-    
-    logToConsole(`Transferred member ${memberId} from ${oldBranch} to ${newBranch}`);
-    
-    return {
-      message: 'Member transferred successfully',
-      data: {
-        memberId,
-        oldBranch,
-        newBranch,
-        date: new Date().toISOString()
-      }
-    };
-  } catch (error) {
-    logError('Transfer failed', error);
-    throw new Error(`Transfer failed: ${error.message}`);
-  }
-}
-
-// ========================
-// RECENT ACTIVITY
-// ========================
-function handleGetRecentActivity() {
-  try {
-    const logs = getSheetData('ACTIVITY_LOGS');
-    
-    const recentLogs = logs
-      .slice(-50)
-      .reverse()
-      .map(row => ({
-        timestamp: row[0],
-        action: row[1],
-        description: row[2],
-        userRole: row[3],
-        userBranch: row[4]
-      }));
-    
-    return {
-      data: recentLogs,
-      count: recentLogs.length
-    };
-  } catch (error) {
-    logError('Failed to get activity logs', error);
-    throw new Error(`Failed to get activity logs: ${error.message}`);
-  }
-}
-
-// ========================
-// UPDATE SETTINGS
-// ========================
-function handleUpdateSettings(data) {
-  try {
-    const { adminAccessCode, masulAccessCode } = data;
-    
-    if (!adminAccessCode && !masulAccessCode) {
-      throw new Error('No settings provided to update');
-    }
-    
-    if (adminAccessCode) {
-      updateRowInSheet('SETTINGS', 'Admin_Access_Code', 'Setting', {
-        'Value': adminAccessCode
-      }, 'admin');
-    }
-    
-    if (masulAccessCode) {
-      updateRowInSheet('SETTINGS', 'Masul_Access_Code', 'Setting', {
-        'Value': masulAccessCode
-      }, 'admin');
-    }
-    
-    logToConsole('Settings updated');
-    
-    return {
-      message: 'Settings updated successfully',
-      data: {
-        adminAccessCodeUpdated: !!adminAccessCode,
-        masulAccessCodeUpdated: !!masulAccessCode
-      }
-    };
-  } catch (error) {
-    logError('Failed to update settings', error);
-    throw new Error(`Failed to update settings: ${error.message}`);
-  }
-}
-
-// ========================
-// EXPORT DATA
-// ========================
-function handleExportData(data) {
-  try {
-    const { type, format = 'csv' } = data;
-    
-    let sheetName;
-    let fileName;
-    
-    switch (type) {
-      case 'members':
-        sheetName = 'MEMBERS_ONLY';
-        fileName = `IIM_Members_Export_${new Date().toISOString().split('T')[0]}`;
+        result = exportData(params.type, params.user);
         break;
-      case 'masul':
-        sheetName = 'MASUL_ONLY';
-        fileName = `IIM_Masul_Export_${new Date().toISOString().split('T')[0]}`;
+      case 'getMember':
+        result = getMember(params.intizarId, params.user);
         break;
-      case 'all':
-        sheetName = 'ALL_MEMBERS';
-        fileName = `IIM_Complete_Export_${new Date().toISOString().split('T')[0]}`;
+      case 'getMasul':
+        result = getMasul(params.intizarId, params.user);
         break;
       default:
-        throw new Error('Invalid export type');
+        throw new Error('Unknown action: ' + action);
     }
-    
-    const sheet = getSheet(sheetName);
-    const sheetData = sheet.getDataRange().getValues();
-    
-    const csvContent = sheetData.map(row => 
-      row.map(cell => {
-        const cellStr = cell.toString();
-        if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
-          return `"${cellStr.replace(/"/g, '""')}"`;
-        }
-        return cellStr;
-      }).join(',')
-    ).join('\n');
-    
-    const blob = Utilities.newBlob(csvContent, 'text/csv', `${fileName}.csv`);
-    const file = DriveApp.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    
-    logToConsole(`Exported ${type} data: ${fileName}`);
-    
-    return {
-      message: 'Export completed successfully',
-      data: {
-        downloadUrl: file.getDownloadUrl(),
-        viewUrl: file.getUrl(),
-        fileName: file.getName(),
-        fileSize: file.getSize()
-      }
-    };
-  } catch (error) {
-    logError('Export failed', error);
-    throw new Error(`Export failed: ${error.message}`);
+
+    output.setContent(JSON.stringify(result));
+    output.setMimeType(ContentService.MimeType.JSON);
+    return output;
+  } catch (err) {
+    logAudit('SYSTEM', 'ERROR', err.toString());
+    return output.setContent(JSON.stringify({ success: false, error: err.toString() }));
   }
+} action);
+    }
+
+    output.setContent(JSON.stringify(result));
+    output.setMimeType(ContentService.MimeType.JSON);
+    return output;
+  } catch (err) {
+    logAudit('SYSTEM', 'ERROR', err.toString());
+    return output.setContent(JSON.stringify({ success: false, error: err.toString() }));
+  }
+}e || !guardianPhone ||
+      !guardianAddress || !zoneName || !branchName || !yearOfRecruitment || !entryLevel)
+    return sendError('Missing required fields', 400);
+
+  if (calculateAge(dob) < 7) return sendError('Member must be at least 7 years old', 400);
+
+  const allowedEntry = ['Bakiyatullah', 'Ansarullah', 'Ghalibun'];
+  if (!allowedEntry.includes(entryLevel))
+    return sendError('Entry level must be Bakiyatullah, Ansarullah, or Ghalibun', 400);
+
+  if (token.role === 'Branch Mas\'ul' && token.branchName !== branchName)
+    return sendError('You can only register members in your own branch', 403);
+
+  const zone = getZone(zoneName);
+  if (!zone || zone.status !== 'Active') return sendError('Invalid or inactive zone', 400);
+  const branch = getBranch(branchName);
+  if (!branch || branch.status !== 'Active' || branch.zoneName !== zoneName)
+    return sendError('Invalid or inactive branch for this zone', 400);
+
+  const intizarId = generateIntizarID();
+  const memberRecruitmentId = generateMemberRecruitmentID(branch.branchCode, yearOfRecruitment);
+  let photoUrl = '';
+  if (photoBase64) photoUrl = savePhoto(photoBase64, intizarId);
+
+  const membersSheet = getSheet('Members');
+  membersSheet.appendRow([
+    intizarId, memberRecruitmentId, fullName, fatherName, gender, dob, birthPlace,
+    phone, email || '', address, stateOfOrigin, lga, zoneName, branchName,
+    yearOfRecruitment, entryLevel, entryLevel, photoUrl, 'FALSE', '', 'Active', new Date()
+  ]);
+
+  logAudit('REGISTER_MEMBER', token.role, token.branchCode || token.zoneName || 'Admin',
+    `Registered ${fullName} (${intizarId})`);
+  return sendSuccess({ intizarId, memberRecruitmentId });
 }
 
-// ========================
-// BACKUP SYSTEM
-// ========================
-function handleBackupSystem() {
-  try {
-    const ss = getSpreadsheet();
-    const backupName = `${CONFIG.SYSTEM_NAME}_Backup_${new Date().toISOString().replace(/[:.]/g, '-')}`;
-    
-    const backup = ss.copy(backupName);
-    backup.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    
-    logToConsole(`Created system backup: ${backupName}`);
-    
-    return {
-      message: 'Backup created successfully',
-      data: {
-        backupUrl: backup.getUrl(),
-        backupId: backup.getId(),
-        backupName: backupName,
-        timestamp: new Date().toISOString()
-      }
-    };
-  } catch (error) {
-    logError('Backup failed', error);
-    throw new Error(`Backup failed: ${error.message}`);
+// ----- Mas'ul Registration -----
+function handleRegisterMasul(params, token) {
+  if (token.role !== 'Admin') return sendError('Only Admin can register Mas\'ul', 403);
+
+  const { fullName, fatherName, gender, dob, birthPlace, phone, email, address,
+          stateOfOrigin, lga, zoneName, branchName, yearOfRecruitment, currentRank,
+          source, existingIntizarId, photoBase64 } = params;
+
+  if (!fullName || !fatherName || !gender || !dob || !birthPlace || !phone ||
+      !address || !stateOfOrigin || !lga || !zoneName || !branchName ||
+      !yearOfRecruitment || !currentRank || !source)
+    return sendError('Missing required fields', 400);
+
+  if (calculateAge(dob) < 18) return sendError('Mas\'ul must be at least 18 years old', 400);
+
+  const brotherEntry = ['Musa\'id', 'Areef', 'Muqaddam'];
+  const sisterEntry = ['Musa\'ida', 'Areefa', 'Muqadama'];
+  let allowed = gender === 'Brother' ? brotherEntry : (gender === 'Sister' ? sisterEntry : null);
+  if (!allowed || !allowed.includes(currentRank))
+    return sendError(`Entry rank for ${gender} must be one of: ${allowed.join(', ')}`, 400);
+
+  const zone = getZone(zoneName);
+  if (!zone || zone.status !== 'Active') return sendError('Invalid or inactive zone', 400);
+  const branch = getBranch(branchName);
+  if (!branch || branch.status !== 'Active' || branch.zoneName !== zoneName)
+    return sendError('Invalid or inactive branch for this zone', 400);
+
+  let intizarId, memberRecruitmentId = '', existingMember = null;
+  let photoUrl = photoBase64 ? savePhoto(photoBase64, 'temp') : ''; // will update later if needed
+
+  if (source === 'X-Ghalibun') {
+    if (!existingIntizarId) return sendError('Existing Intizar ID required', 400);
+    existingMember = findMemberByIntizarId(existingIntizarId);
+    if (!existingMember) return sendError('Member not found', 400);
+    if (existingMember.currentLevel !== 'X-Ghalibun') return sendError('Member is not X-Ghalibun', 400);
+    if (existingMember.isMasul === 'TRUE') return sendError('Member is already a Mas\'ul', 400);
+    intizarId = existingIntizarId;
+    memberRecruitmentId = existingMember.recruitmentId;
+  } else {
+    intizarId = generateIntizarID();
   }
+
+  const masulRecruitmentId = generateMasulRecruitmentID(branch.branchCode, yearOfRecruitment);
+
+  const masulsSheet = getSheet('Masuls');
+  masulsSheet.appendRow([
+    intizarId, masulRecruitmentId, fullName, fatherName, gender, dob, birthPlace,
+    phone, email || '', address, stateOfOrigin, lga, zoneName, branchName,
+    yearOfRecruitment, currentRank, source, photoUrl, 'Active', new Date()
+  ]);
+
+  if (source === 'X-Ghalibun') {
+    updateMemberMasulStatus(intizarId, masulRecruitmentId);
+  }
+
+  logAudit('REGISTER_MASUL', 'Admin', 'Admin',
+    `Registered Mas'ul ${fullName} (${intizarId}) from source ${source}`);
+  return sendSuccess({ intizarId, masulRecruitmentId, memberRecruitmentId });
 }
 
-// ========================
-// HELPER FUNCTION
-// ========================
-function canPromote(oldLevel, newLevel) {
-  if (!MEMBER_LEVELS.includes(oldLevel) || !MEMBER_LEVELS.includes(newLevel)) {
-    return false;
+// ----- Get Members (filtered by role) -----
+function handleGetMembers(params, token) {
+  const membersSheet = getSheet('Members');
+  const data = membersSheet.getDataRange().getValues();
+  const headers = data.shift();
+  let members = data.map(row => {
+    let obj = {};
+    headers.forEach((h, i) => obj[h] = row[i]);
+    return obj;
+  });
+
+  if (token.role === 'Branch Mas\'ul')
+    members = members.filter(m => m.branchName === token.branchName && m.status === 'Active');
+  else if (token.role === 'Zonal Mas\'ul')
+    members = members.filter(m => m.zoneName === token.zoneName && m.status === 'Active');
+
+  return sendSuccess(members);
+}
+
+// ----- Get Mas'uls (Admin only) -----
+function handleGetMasuls(params, token) {
+  if (token.role !== 'Admin') return sendError('Permission denied', 403);
+  const masulsSheet = getSheet('Masuls');
+  const data = masulsSheet.getDataRange().getValues();
+  const headers = data.shift();
+  const masuls = data.map(row => {
+    let obj = {};
+    headers.forEach((h, i) => obj[h] = row[i]);
+    return obj;
+  });
+  return sendSuccess(masuls);
+}
+
+// ----- Get Member Details (with history) -----
+function handleGetMemberDetails(params, token) {
+  const { intizarId } = params;
+  if (!intizarId) return sendError('Intizar ID required', 400);
+  const member = findMemberByIntizarId(intizarId);
+  if (!member) return sendError('Member not found', 400);
+
+  if (token.role === 'Branch Mas\'ul' && member.branchName !== token.branchName)
+    return sendError('Permission denied', 403);
+  if (token.role === 'Zonal Mas\'ul' && member.zoneName !== token.zoneName)
+    return sendError('Permission denied', 403);
+
+  const promSheet = getSheet('PromotionHistory');
+  const promData = promSheet.getDataRange().getValues();
+  const promHeaders = promData.shift();
+  const promotions = promData.filter(r => r[0] === intizarId).map(r => {
+    let obj = {};
+    promHeaders.forEach((h, i) => obj[h] = r[i]);
+    return obj;
+  });
+
+  const transSheet = getSheet('TransferHistory');
+  const transData = transSheet.getDataRange().getValues();
+  const transHeaders = transData.shift();
+  const transfers = transData.filter(r => r[0] === intizarId).map(r => {
+    let obj = {};
+    transHeaders.forEach((h, i) => obj[h] = r[i]);
+    return obj;
+  });
+
+  return sendSuccess({ member, promotions, transfers });
+}
+
+// ----- Promote Member -----
+function handlePromoteMember(params, token) {
+  const { intizarId, newLevel } = params;
+  if (!intizarId || !newLevel) return sendError('Missing parameters', 400);
+
+  const member = findMemberByIntizarId(intizarId);
+  if (!member) return sendError('Member not found', 400);
+
+  if (token.role === 'Admin') {
+    // ok
+  } else if (token.role === 'Zonal Mas\'ul') {
+    if (member.zoneName !== token.zoneName) return sendError('Can only promote in your zone', 403);
+  } else {
+    return sendError('Permission denied', 403);
   }
-  
-  const oldIndex = LEVEL_HIERARCHY[oldLevel];
-  const newIndex = LEVEL_HIERARCHY[newLevel];
-  
-  return newIndex > oldIndex;
+
+  const levelOrder = ['Bakiyatullah', 'Ansarullah', 'Ghalibun', 'X-Ghalibun'];
+  const currentIdx = levelOrder.indexOf(member.currentLevel);
+  const newIdx = levelOrder.indexOf(newLevel);
+  if (currentIdx === -1 || newIdx === -1) return sendError('Invalid level', 400);
+  if (newIdx !== currentIdx + 1) return sendError('Can only promote to the next level', 400);
+
+  const membersSheet = getSheet('Members');
+  const data = membersSheet.getDataRange().getValues();
+  const headers = data.shift();
+  const rowIndex = data.findIndex(r => r[0] === intizarId);
+  if (rowIndex === -1) return sendError('Member not found', 400);
+  const currentLevelCol = headers.indexOf('currentLevel') + 1;
+  membersSheet.getRange(rowIndex + 2, currentLevelCol).setValue(newLevel);
+
+  const promSheet = getSheet('PromotionHistory');
+  promSheet.appendRow([intizarId, member.currentLevel, newLevel,
+    token.role + ':' + (token.branchCode || token.zoneName || 'Admin'), new Date()]);
+
+  logAudit('PROMOTE_MEMBER', token.role, token.branchCode || token.zoneName || 'Admin',
+    `Promoted ${intizarId} from ${member.currentLevel} to ${newLevel}`);
+  return sendSuccess({ message: 'Member promoted' });
+}
+
+// ----- Promote Mas'ul -----
+function handlePromoteMasul(params, token) {
+  if (token.role !== 'Admin') return sendError('Only Admin can promote Mas\'ul', 403);
+  const { intizarId, newRank } = params;
+  if (!intizarId || !newRank) return sendError('Missing parameters', 400);
+
+  const masul = findMasulByIntizarId(intizarId);
+  if (!masul) return sendError('Mas\'ul not found', 400);
+
+  const brotherRanks = ['Musa\'id', 'Areef', 'Muqaddam', 'Ra\'id', 'Raqeeb', 'Mulazim', 'Muhafiz', 'Ameed', 'Aqeeda', 'Qaid'];
+  const sisterRanks = ['Musa\'ida', 'Areefa', 'Muqadama', 'Ra\'ida', 'Raqeeba', 'Mulazima', 'Muhafiza', 'Ameeda', 'Aqeeda', 'Qaida'];
+  const rankOrder = masul.gender === 'Brother' ? brotherRanks : (masul.gender === 'Sister' ? sisterRanks : null);
+  if (!rankOrder) return sendError('Invalid gender', 400);
+
+  const currentIdx = rankOrder.indexOf(masul.currentRank);
+  const newIdx = rankOrder.indexOf(newRank);
+  if (currentIdx === -1 || newIdx === -1) return sendError('Invalid rank', 400);
+  if (newIdx !== currentIdx + 1) return sendError('Can only promote to the next rank', 400);
+
+  const masulsSheet = getSheet('Masuls');
+  const data = masulsSheet.getDataRange().getValues();
+  const headers = data.shift();
+  const rowIndex = data.findIndex(r => r[0] === intizarId);
+  if (rowIndex === -1) return sendError('Mas\'ul not found', 400);
+  const rankCol = headers.indexOf('currentRank') + 1;
+  masulsSheet.getRange(rowIndex + 2, rankCol).setValue(newRank);
+
+  const promSheet = getSheet('PromotionHistory');
+  promSheet.appendRow([intizarId, masul.currentRank, newRank, 'Admin', new Date()]);
+
+  logAudit('PROMOTE_MASUL', 'Admin', 'Admin', `Promoted Mas'ul ${intizarId} from ${masul.currentRank} to ${newRank}`);
+  return sendSuccess({ message: 'Mas\'ul promoted' });
+}
+
+// ----- Transfer Member -----
+function handleTransferMember(params, token) {
+  if (token.role !== 'Admin') return sendError('Only Admin can transfer members', 403);
+  const { intizarId, newZoneName, newBranchName } = params;
+  if (!intizarId || !newZoneName || !newBranchName) return sendError('Missing parameters', 400);
+
+  const member = findMemberByIntizarId(intizarId);
+  if (!member) return sendError('Member not found', 400);
+
+  const zone = getZone(newZoneName);
+  if (!zone || zone.status !== 'Active') return sendError('Invalid or inactive zone', 400);
+  const branch = getBranch(newBranchName);
+  if (!branch || branch.status !== 'Active' || branch.zoneName !== newZoneName)
+    return sendError('Invalid or inactive branch for this zone', 400);
+
+  const membersSheet = getSheet('Members');
+  const data = membersSheet.getDataRange().getValues();
+  const headers = data.shift();
+  const rowIndex = data.findIndex(r => r[0] === intizarId);
+  if (rowIndex === -1) return sendError('Member not found', 400);
+  const zoneCol = headers.indexOf('zoneName') + 1;
+  const branchCol = headers.indexOf('branchName') + 1;
+  membersSheet.getRange(rowIndex + 2, zoneCol).setValue(newZoneName);
+  membersSheet.getRange(rowIndex + 2, branchCol).setValue(newBranchName);
+
+  const transSheet = getSheet('TransferHistory');
+  transSheet.appendRow([intizarId, member.branchName, newBranchName, 'Admin', new Date()]);
+
+  logAudit('TRANSFER_MEMBER', 'Admin', 'Admin', `Transferred ${intizarId} from ${member.branchName} to ${newBranchName}`);
+  return sendSuccess({ message: 'Member transferred' });
+}
+
+// ----- Transfer Mas'ul -----
+function handleTransferMasul(params, token) {
+  if (token.role !== 'Admin') return sendError('Only Admin can transfer Mas\'ul', 403);
+  const { intizarId, newZoneName, newBranchName } = params;
+  if (!intizarId || !newZoneName || !newBranchName) return sendError('Missing parameters', 400);
+
+  const masul = findMasulByIntizarId(intizarId);
+  if (!masul) return sendError('Mas\'ul not found', 400);
+
+  const zone = getZone(newZoneName);
+  if (!zone || zone.status !== 'Active') return sendError('Invalid or inactive zone', 400);
+  const branch = getBranch(newBranchName);
+  if (!branch || branch.status !== 'Active' || branch.zoneName !== newZoneName)
+    return sendError('Invalid or inactive branch for this zone', 400);
+
+  const masulsSheet = getSheet('Masuls');
+  const data = masulsSheet.getDataRange().getValues();
+  const headers = data.shift();
+  const rowIndex = data.findIndex(r => r[0] === intizarId);
+  if (rowIndex === -1) return sendError('Mas\'ul not found', 400);
+  const zoneCol = headers.indexOf('zoneName') + 1;
+  const branchCol = headers.indexOf('branchName') + 1;
+  masulsSheet.getRange(rowIndex + 2, zoneCol).setValue(newZoneName);
+  masulsSheet.getRange(rowIndex + 2, branchCol).setValue(newBranchName);
+
+  const transSheet = getSheet('TransferHistory');
+  transSheet.appendRow([intizarId, masul.branchName, newBranchName, 'Admin', new Date()]);
+
+  logAudit('TRANSFER_MASUL', 'Admin', 'Admin', `Transferred Mas'ul ${intizarId} from ${masul.branchName} to ${newBranchName}`);
+  return sendSuccess({ message: 'Mas\'ul transferred' });
+}
+
+// ----- Zone Management -----
+function handleAddZone(params, token) {
+  if (token.role !== 'Admin') return sendError('Permission denied', 403);
+  const { zoneName } = params;
+  if (!zoneName) return sendError('Zone name required', 400);
+  if (getZone(zoneName)) return sendError('Zone already exists', 400);
+  const zonesSheet = getSheet('Zones');
+  zonesSheet.appendRow([zonesSheet.getLastRow() + 1, zoneName, 'Active']);
+  logAudit('ADD_ZONE', 'Admin', 'Admin', `Added zone ${zoneName}`);
+  return sendSuccess({ message: 'Zone added' });
+}
+
+function handleEditZone(params, token) {
+  if (token.role !== 'Admin') return sendError('Permission denied', 403);
+  const { oldZoneName, newZoneName } = params;
+  if (!oldZoneName || !newZoneName) return sendError('Old and new zone names required', 400);
+  const zonesSheet = getSheet('Zones');
+  const data = zonesSheet.getDataRange().getValues();
+  const headers = data.shift();
+  const rowIndex = data.findIndex(r => r[1] === oldZoneName);
+  if (rowIndex === -1) return sendError('Zone not found', 400);
+  zonesSheet.getRange(rowIndex + 2, 2).setValue(newZoneName);
+  logAudit('EDIT_ZONE', 'Admin', 'Admin', `Renamed zone ${oldZoneName} to ${newZoneName}`);
+  return sendSuccess({ message: 'Zone updated' });
+}
+
+function handleDisableZone(params, token) {
+  if (token.role !== 'Admin') return sendError('Permission denied', 403);
+  const { zoneName } = params;
+  if (!zoneName) return sendError('Zone name required', 400);
+  const zonesSheet = getSheet('Zones');
+  const data = zonesSheet.getDataRange().getValues();
+  const headers = data.shift();
+  const rowIndex = data.findIndex(r => r[1] === zoneName);
+  if (rowIndex === -1) return sendError('Zone not found', 400);
+  zonesSheet.getRange(rowIndex + 2, 3).setValue('Disabled');
+  logAudit('DISABLE_ZONE', 'Admin', 'Admin', `Disabled zone ${zoneName}`);
+  return sendSuccess({ message: 'Zone disabled' });
+}
+
+// ----- Branch Management -----
+function handleAddBranch(params, token) {
+  if (token.role !== 'Admin') return sendError('Permission denied', 403);
+  const { zoneName, branchName, branchCode } = params;
+  if (!zoneName || !branchName || !branchCode) return sendError('Zone, branch name and code required', 400);
+  if (!getZone(zoneName)) return sendError('Zone does not exist', 400);
+  if (getBranchByCode(branchCode)) return sendError('Branch code already exists', 400);
+  const branchesSheet = getSheet('Branches');
+  branchesSheet.appendRow([branchName, branchCode, zoneName, 'Active']);
+  logAudit('ADD_BRANCH', 'Admin', 'Admin', `Added branch ${branchName} (${branchCode}) in ${zoneName}`);
+  return sendSuccess({ message: 'Branch added' });
+}
+
+function handleEditBranch(params, token) {
+  if (token.role !== 'Admin') return sendError('Permission denied', 403);
+  const { oldBranchName, newBranchName, newBranchCode, newZoneName } = params;
+  if (!oldBranchName) return sendError('Old branch name required', 400);
+  const branchesSheet = getSheet('Branches');
+  const data = branchesSheet.getDataRange().getValues();
+  const headers = data.shift();
+  const rowIndex = data.findIndex(r => r[0] === oldBranchName);
+  if (rowIndex === -1) return sendError('Branch not found', 400);
+  if (newBranchName) branchesSheet.getRange(rowIndex + 2, 1).setValue(newBranchName);
+  if (newBranchCode) {
+    const existing = getBranchByCode(newBranchCode);
+    if (existing && existing.branchName !== oldBranchName) return sendError('Branch code already in use', 400);
+    branchesSheet.getRange(rowIndex + 2, 2).setValue(newBranchCode);
+  }
+  if (newZoneName) {
+    if (!getZone(newZoneName)) return sendError('Zone does not exist', 400);
+    branchesSheet.getRange(rowIndex + 2, 3).setValue(newZoneName);
+  }
+  logAudit('EDIT_BRANCH', 'Admin', 'Admin', `Edited branch ${oldBranchName}`);
+  return sendSuccess({ message: 'Branch updated' });
+}
+
+function handleDisableBranch(params, token) {
+  if (token.role !== 'Admin') return sendError('Permission denied', 403);
+  const { branchName } = params;
+  if (!branchName) return sendError('Branch name required', 400);
+  const branchesSheet = getSheet('Branches');
+  const data = branchesSheet.getDataRange().getValues();
+  const headers = data.shift();
+  const rowIndex = data.findIndex(r => r[0] === branchName);
+  if (rowIndex === -1) return sendError('Branch not found', 400);
+  branchesSheet.getRange(rowIndex + 2, 4).setValue('Disabled');
+  logAudit('DISABLE_BRANCH', 'Admin', 'Admin', `Disabled branch ${branchName}`);
+  return sendSuccess({ message: 'Branch disabled' });
+}
+
+// ----- Get Zones & Branches -----
+function handleGetZones(params, token) {
+  const zonesSheet = getSheet('Zones');
+  const data = zonesSheet.getDataRange().getValues();
+  const headers = data.shift();
+  const zones = data.map(r => ({ zoneName: r[1], status: r[2] })).filter(z => z.status === 'Active');
+  return sendSuccess(zones);
+}
+
+function handleGetBranches(params, token) {
+  const { zoneName } = params;
+  const branchesSheet = getSheet('Branches');
+  const data = branchesSheet.getDataRange().getValues();
+  const headers = data.shift();
+  let branches = data.map(r => ({ branchName: r[0], branchCode: r[1], zoneName: r[2], status: r[3] }))
+                      .filter(b => b.status === 'Active');
+  if (zoneName) branches = branches.filter(b => b.zoneName === zoneName);
+  return sendSuccess(branches);
+}
+
+// ----- Audit Log (Admin only) -----
+function handleGetAuditLog(params, token) {
+  if (token.role !== 'Admin') return sendError('Permission denied', 403);
+  const auditSheet = getSheet('AuditLog');
+  const data = auditSheet.getDataRange().getValues();
+  const headers = data.shift();
+  const logs = data.map(r => {
+    let obj = {};
+    headers.forEach((h, i) => obj[h] = r[i]);
+    return obj;
+  });
+  return sendSuccess(logs);
+}
+
+// ----- Edit Config (Admin only) -----
+function handleEditConfig(params, token) {
+  if (token.role !== 'Admin') return sendError('Permission denied', 403);
+  const { key, value } = params;
+  if (!key || value === undefined) return sendError('Key and value required', 400);
+  const config = getConfigSheet();
+  setConfigValue(config, key, value);
+  logAudit('EDIT_CONFIG', 'Admin', 'Admin', `Changed config key ${key}`);
+  return sendSuccess({ message: 'Config updated' });
+}
+
+// ----- Export Sheet (Admin only) -----
+function handleExportSheet(params, token) {
+  if (token.role !== 'Admin') return sendError('Permission denied', 403);
+  const { sheetName } = params;
+  if (!sheetName) return sendError('Sheet name required', 400);
+  const sheet = getSheet(sheetName);
+  if (!sheet) return sendError('Sheet not found', 400);
+  const data = sheet.getDataRange().getValues();
+  const csv = data.map(row => row.join(',')).join('\n');
+  logAudit('EXPORT_SHEET', 'Admin', 'Admin', `Exported ${sheetName}`);
+  return ContentService.createTextOutput(csv)
+    .setMimeType(ContentService.MimeType.CSV)
+    .downloadAsFile(`${sheetName}.csv`);
+}
+
+function handleDownloadSheet(params, token) {
+  return handleExportSheet(params, token);
+}
+
+// ----- Response Helpers -----
+function sendSuccess(data) {
+  return ContentService.createTextOutput(JSON.stringify({ success: true, data }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+function sendError(message, code = 400) {
+  return ContentService.createTextOutput(JSON.stringify({ success: false, error: message, code }))
+    .setMimeType(ContentService.MimeType.JSON);
 }

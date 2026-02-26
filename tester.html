@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intizarul Imam Muntazar – Backend Tester</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; background: #f0f2f5; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; border-bottom: 3px solid #556B2F; padding-bottom: 12px; }
+        .status-section { background: #f8f9fa; border-radius: 10px; padding: 20px; margin: 20px 0; border: 1px solid #dee2e6; }
+        .online-badge { display: inline-block; padding: 8px 16px; border-radius: 20px; font-weight: bold; margin-left: 15px; }
+        .online { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .offline { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .checking { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        button { background: #556B2F; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; margin: 5px; transition: all 0.3s; }
+        button:hover { background: #3e4f23; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        button:disabled { background: #95a5a6; cursor: not-allowed; transform: none; }
+        textarea, input[type=text], select { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #e9ecef; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 14px; transition: border 0.3s; }
+        textarea:focus, input:focus, select:focus { border-color: #556B2F; outline: none; }
+        label { font-weight: 600; display: block; margin-top: 15px; color: #2c3e50; }
+        .response { background: #1e2b3a; color: #e9f0f9; padding: 20px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; font-family: 'Courier New', monospace; margin-top: 20px; max-height: 500px; border-left: 5px solid; }
+        .success { border-left-color: #28a745; }
+        .error { border-left-color: #dc3545; }
+        .info-box { background: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px; margin: 15px 0; border-radius: 4px; }
+        .param-preset { background: #f1f9f9; border: 1px solid #b8e2e2; padding: 12px; border-radius: 6px; margin: 10px 0; cursor: pointer; transition: background 0.2s; }
+        .param-preset:hover { background: #d1f0f0; }
+        .flex-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🕌 Intizarul Imam Muntazar – Backend Tester</h1>
+        <p><strong>Base URL:</strong> <code style="background: #e9ecef; padding: 5px 10px; border-radius: 4px;" id="baseUrlDisplay">https://script.google.com/macros/s/AKfycbxaINeAG2qRs6WX6AH0TYO6y-Yd2lnf7iGFwTVdZHYZ8inHho_RbFPWpu1dSYfaTzcX/exec</code></p>
+
+        <!-- STEP 1: CHECK ONLINE STATUS -->
+        <div class="status-section">
+            <h2>📡 Step 1: Check System Online Status</h2>
+            <p>This uses a <code>ping</code> action – no database access, only returns success if the backend is reachable.</p>
+            
+            <div class="flex-row">
+                <button id="pingBtn">🏓 Send Ping</button>
+                <span id="statusBadge" class="online-badge checking">Not checked</span>
+            </div>
+            
+            <div id="pingResult" class="response" style="display: none; margin-top: 15px;"></div>
+        </div>
+
+        <!-- STEP 2: TEST FUNCTIONS (only enabled after ping succeeds) -->
+        <div id="testSection" style="opacity: 0.5; pointer-events: none; transition: opacity 0.3s;">
+            <h2>🧪 Step 2: Test Backend Functions</h2>
+            <div class="info-box">
+                <strong>⚠️ Enabled only after system is confirmed online.</strong><br>
+                All requests use <code>application/x-www-form-urlencoded</code> with a <code>payload</code> field – no CORS preflight.
+            </div>
+
+            <div class="flex-row">
+                <label style="flex:1;">Select Action:</label>
+                <select id="actionSelect" style="flex:3;">
+                    <optgroup label="🔐 Authentication">
+                        <option value="login">login</option>
+                    </optgroup>
+                    <optgroup label="📋 Read Operations">
+                        <option value="getZones">getZones</option>
+                        <option value="getBranches">getBranches</option>
+                        <option value="getMembers">getMembers</option>
+                        <option value="getMasuls">getMasuls</option>
+                        <option value="getMember">getMember</option>
+                        <option value="getMasul">getMasul</option>
+                        <option value="getAuditLog">getAuditLog</option>
+                        <option value="getConfig">getConfig</option>
+                    </optgroup>
+                    <optgroup label="📝 Write Operations">
+                        <option value="registerMember">registerMember</option>
+                        <option value="registerMasul">registerMasul</option>
+                        <option value="promoteMember">promoteMember</option>
+                        <option value="promoteMasul">promoteMasul</option>
+                        <option value="transferMember">transferMember</option>
+                        <option value="transferMasul">transferMasul</option>
+                    </optgroup>
+                    <optgroup label="🏢 Management">
+                        <option value="addZone">addZone</option>
+                        <option value="editZone">editZone</option>
+                        <option value="disableZone">disableZone</option>
+                        <option value="enableZone">enableZone</option>
+                        <option value="addBranch">addBranch</option>
+                        <option value="editBranch">editBranch</option>
+                        <option value="disableBranch">disableBranch</option>
+                        <option value="enableBranch">enableBranch</option>
+                        <option value="updateConfig">updateConfig</option>
+                        <option value="exportData">exportData</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <label>Action Name (manual override):</label>
+            <input type="text" id="actionInput" placeholder="e.g., getZones" value="getZones">
+
+            <!-- Parameter Presets -->
+            <label>📌 Parameter Presets:</label>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 10px; margin: 10px 0;">
+                <div class="param-preset" onclick="loadPreset('login', '{\"role\":\"Admin\",\"code\":\"Muntazir@Global\"}', '')">🔑 Admin Login</div>
+                <div class="param-preset" onclick="loadPreset('login', '{\"role\":\"Zonal Mas\\'ul\",\"code\":\"Muntazir@SOKOTO ZONE\"}', '')">🌍 Zonal Login</div>
+                <div class="param-preset" onclick="loadPreset('getBranches', '{\"zone\":\"SOKOTO ZONE\"}', '{\"role\":\"Zonal Mas\\'ul\",\"zone\":\"SOKOTO ZONE\"}')">🏢 Get Branches (Zonal)</div>
+                <div class="param-preset" onclick="loadPreset('getMember', '{\"intizarId\":\"MTZR/00001\"}', '{\"role\":\"Admin\"}')">👤 Get Member</div>
+                <div class="param-preset" onclick="loadPreset('addZone', '{\"zoneName\":\"TEST ZONE\"}', '{\"role\":\"Admin\"}')">➕ Add Test Zone</div>
+            </div>
+
+            <label>Parameters (JSON):</label>
+            <textarea id="paramsInput" rows="6" placeholder='{"key":"value"}'>{"zone":"SOKOTO ZONE"}</textarea>
+
+            <label>User (JSON, optional):</label>
+            <textarea id="userInput" rows="3" placeholder='{"role":"Admin"}'></textarea>
+
+            <div style="margin: 20px 0;">
+                <button id="sendBtn" style="background: #2196F3;">🚀 Send Request</button>
+                <button id="clearBtn">🗑️ Clear Response</button>
+            </div>
+
+            <div id="responseContainer" class="response" style="display: none;"></div>
+        </div>
+
+        <div style="margin-top: 30px; font-size: 0.9em; color: #666; text-align: center; border-top: 1px solid #dee2e6; padding-top: 15px;">
+            ⚡ All requests are sent as <code>application/x-www-form-urlencoded</code> with a <code>payload</code> parameter.<br>
+            ✅ First click "Ping" – if you see <code>{"success":true,"message":"System is online"}</code>, the system is ready.
+        </div>
+    </div>
+
+    <script>
+        // Your backend URL – update this if you deploy a new version
+        const BASE_URL = 'https://script.google.com/macros/s/AKfycbxaINeAG2qRs6WX6AH0TYO6y-Yd2lnf7iGFwTVdZHYZ8inHho_RbFPWpu1dSYfaTzcX/exec';
+        document.getElementById('baseUrlDisplay').innerText = BASE_URL;
+
+        // DOM elements
+        const pingBtn = document.getElementById('pingBtn');
+        const statusBadge = document.getElementById('statusBadge');
+        const pingResult = document.getElementById('pingResult');
+        const testSection = document.getElementById('testSection');
+        const actionSelect = document.getElementById('actionSelect');
+        const actionInput = document.getElementById('actionInput');
+        const paramsInput = document.getElementById('paramsInput');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const responseContainer = document.getElementById('responseContainer');
+
+        // Update action input when dropdown changes
+        actionSelect.addEventListener('change', function() {
+            if (this.value) {
+                actionInput.value = this.value;
+            }
+        });
+
+        // Load preset into form
+        window.loadPreset = function(action, params, user) {
+            actionInput.value = action;
+            paramsInput.value = params;
+            userInput.value = user;
+            // Update dropdown if action matches
+            const option = Array.from(actionSelect.options).find(opt => opt.value === action);
+            if (option) actionSelect.value = action;
+        };
+
+        // Send a request to the backend (form-urlencoded)
+        async function sendRequest(action, params, user) {
+            const payload = { action, ...params };
+            if (user && Object.keys(user).length > 0) {
+                payload.user = user;
+            }
+
+            const formBody = new URLSearchParams();
+            formBody.append('payload', JSON.stringify(payload));
+
+            const response = await fetch(BASE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formBody.toString()
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error ${response.status}`);
+            }
+            return await response.json();
+        }
+
+        // Ping button – check if system is online
+        pingBtn.addEventListener('click', async () => {
+            statusBadge.textContent = 'Checking...';
+            statusBadge.className = 'online-badge checking';
+            pingResult.style.display = 'block';
+            pingResult.textContent = 'Sending ping...';
+            pingResult.className = 'response';
+
+            try {
+                const result = await sendRequest('ping', {}, null);
+                
+                if (result.success) {
+                    statusBadge.textContent = '✅ ONLINE';
+                    statusBadge.className = 'online-badge online';
+                    pingResult.className = 'response success';
+                    pingResult.textContent = JSON.stringify(result, null, 2);
+                    
+                    // Enable test section
+                    testSection.style.opacity = '1';
+                    testSection.style.pointerEvents = 'auto';
+                } else {
+                    statusBadge.textContent = '❌ OFFLINE';
+                    statusBadge.className = 'online-badge offline';
+                    pingResult.className = 'response error';
+                    pingResult.textContent = JSON.stringify(result, null, 2);
+                }
+            } catch (error) {
+                statusBadge.textContent = '❌ ERROR';
+                statusBadge.className = 'online-badge offline';
+                pingResult.className = 'response error';
+                pingResult.textContent = 'Network/Connection Error: ' + error.message;
+            }
+        });
+
+        // Send custom request
+        sendBtn.addEventListener('click', async () => {
+            const action = actionInput.value.trim();
+            if (!action) {
+                alert('Please enter an action');
+                return;
+            }
+
+            let params = {};
+            try {
+                params = JSON.parse(paramsInput.value || '{}');
+            } catch (e) {
+                alert('Invalid JSON in Parameters: ' + e.message);
+                return;
+            }
+
+            let user = null;
+            if (userInput.value.trim()) {
+                try {
+                    user = JSON.parse(userInput.value);
+                } catch (e) {
+                    alert('Invalid JSON in User: ' + e.message);
+                    return;
+                }
+            }
+
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '⏳ Sending...';
+
+            try {
+                const result = await sendRequest(action, params, user);
+                responseContainer.style.display = 'block';
+                responseContainer.className = 'response ' + (result.success ? 'success' : 'error');
+                responseContainer.textContent = JSON.stringify(result, null, 2);
+            } catch (e) {
+                responseContainer.style.display = 'block';
+                responseContainer.className = 'response error';
+                responseContainer.textContent = 'Error: ' + e.message;
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '🚀 Send Request';
+            }
+        });
+
+        // Clear response
+        clearBtn.addEventListener('click', () => {
+            responseContainer.style.display = 'none';
+            responseContainer.textContent = '';
+        });
+
+        // Initially disable test section
+        testSection.style.opacity = '0.5';
+        testSection.style.pointerEvents = 'none';
+    </script>
+</body>
+</html>masulState').value,
+                lga: document.getElementById('masulLga').value,
+                zone: document.getElementById('masulZone').value,
+                branch: document.getElementById('masulBranch').value,
+                year: document.getElementById('masulYear').value,
+                currentRank: document.getElementById('masulRank').value,
+                source: document.getElementById('masulSource').value,
+                intizarId: document.getElementById('masulIntizarId').value || undefined
+            };
+            try {
+                const result = await apiRequest('registerMasul', { data });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        // Get Zones
+        async function testGetZones() {
+            try {
+                const result = await apiRequest('getZones', {});
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        // Get Branches (all)
+        async function testGetBranches() {
+            try {
+                const result = await apiRequest('getBranches', {});
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        // Get Branches with zone filter
+        async function testGetBranchesWithZone() {
+            try {
+                const result = await apiRequest('getBranches', { zone: 'SOKOTO ZONE' });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        // Get Members
+        async function testGetMembers() {
+            try {
+                const result = await apiRequest('getMembers', { page: 1, pageSize: 50 });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        // Get Masuls
+        async function testGetMasuls() {
+            try {
+                const result = await apiRequest('getMasuls', { page: 1, pageSize: 50 });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        // Get Audit Log
+        async function testGetAuditLog() {
+            try {
+                const result = await apiRequest('getAuditLog', {});
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        // Get Single Member
+        async function testGetMember() {
+            const intizarId = document.getElementById('singleIntizarId').value;
+            if (!intizarId) { alert('Enter Intizar ID'); return; }
+            try {
+                const result = await apiRequest('getMember', { intizarId });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        // Get Single Mas'ul
+        async function testGetMasul() {
+            const intizarId = document.getElementById('singleIntizarId').value;
+            if (!intizarId) { alert('Enter Intizar ID'); return; }
+            try {
+                const result = await apiRequest('getMasul', { intizarId });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        // Promote Member
+        async function testPromoteMember() {
+            const intizarId = document.getElementById('promoteIntizarId').value;
+            if (!intizarId) { alert('Enter Intizar ID'); return; }
+            try {
+                const result = await apiRequest('promoteMember', { intizarId });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        // Promote Mas'ul
+        async function testPromoteMasul() {
+            const intizarId = document.getElementById('promoteIntizarId').value;
+            if (!intizarId) { alert('Enter Intizar ID'); return; }
+            try {
+                const result = await apiRequest('promoteMasul', { intizarId });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        // Transfer Member
+        async function testTransferMember() {
+            const intizarId = document.getElementById('transferIntizarId').value;
+            const newBranchCode = document.getElementById('newBranchCode').value;
+            if (!intizarId || !newBranchCode) { alert('Enter Intizar ID and Branch Code'); return; }
+            try {
+                const result = await apiRequest('transferMember', { intizarId, newBranchCode });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        // Transfer Mas'ul
+        async function testTransferMasul() {
+            const intizarId = document.getElementById('transferIntizarId').value;
+            const newBranchCode = document.getElementById('newBranchCode').value;
+            if (!intizarId || !newBranchCode) { alert('Enter Intizar ID and Branch Code'); return; }
+            try {
+                const result = await apiRequest('transferMasul', { intizarId, newBranchCode });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        // Zone Management
+        async function testAddZone() {
+            const zoneName = document.getElementById('zoneName').value;
+            try {
+                const result = await apiRequest('addZone', { zoneName });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        async function testEditZone() {
+            const zoneId = document.getElementById('zoneId').value;
+            const newName = document.getElementById('zoneName').value;
+            if (!zoneId) { alert('Enter Zone ID'); return; }
+            try {
+                const result = await apiRequest('editZone', { zoneId, newName });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        async function testDisableZone() {
+            const zoneId = document.getElementById('zoneId').value;
+            if (!zoneId) { alert('Enter Zone ID'); return; }
+            try {
+                const result = await apiRequest('disableZone', { zoneId });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        async function testEnableZone() {
+            const zoneId = document.getElementById('zoneId').value;
+            if (!zoneId) { alert('Enter Zone ID'); return; }
+            try {
+                const result = await apiRequest('enableZone', { zoneId });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        // Branch Management
+        async function testAddBranch() {
+            const branchName = document.getElementById('branchName').value;
+            const zoneName = document.getElementById('branchZone').value;
+            try {
+                const result = await apiRequest('addBranch', { branchName, zoneName });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        async function testEditBranch() {
+            const branchCode = document.getElementById('branchCode').value;
+            const newName = document.getElementById('branchName').value;
+            const newZone = document.getElementById('branchZone').value;
+            if (!branchCode) { alert('Enter Branch Code'); return; }
+            try {
+                const result = await apiRequest('editBranch', { branchCode, newName, newZone });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        async function testDisableBranch() {
+            const branchCode = document.getElementById('branchCode').value;
+            if (!branchCode) { alert('Enter Branch Code'); return; }
+            try {
+                const result = await apiRequest('disableBranch', { branchCode });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        async function testEnableBranch() {
+            const branchCode = document.getElementById('branchCode').value;
+            if (!branchCode) { alert('Enter Branch Code'); return; }
+            try {
+                const result = await apiRequest('enableBranch', { branchCode });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        // Config
+        async function testGetConfig() {
+            const key = document.getElementById('configKey').value;
+            try {
+                const result = await apiRequest('getConfig', { key });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        async function testUpdateConfig() {
+            const key = document.getElementById('configKey').value;
+            const value = document.getElementById('configValue').value;
+            try {
+                const result = await apiRequest('updateConfig', { key, value });
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+
+        // Export
+        async function testExportData(type) {
+            try {
+                const result = await apiRequest('exportData', { type });
+                displayResult(result);
+                // Create download link
+                if (result.csv) {
+                    const blob = new Blob([result.csv], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = result.filename || `${type}.csv`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                }
+            } catch (error) {
+                displayResult({ error: error.message });
+            }
+        }
+    </script>
+</body>
+</html>
