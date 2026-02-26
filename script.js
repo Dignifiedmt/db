@@ -1,5 +1,5 @@
 // ==================== CONFIGURATION ====================
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxaINeAG2qRs6WX6AH0TYO6y-Yd2lnf7iGFwTVdZHYZ8inHho_RbFPWpu1dSYfaTzcX/exec'; // REPLACE WITH YOUR DEPLOYED URL
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcBUJTITyhHzPB8Vjv-lp7XxKOlrgsUzSGy5Vrmr3xpShb3y8q8dOFTQqfrdYw7MaN/exec'; // REPLACE WITH YOUR DEPLOYED URL
 const PAGE_SIZE = 50; // number of rows per page
 
 // ==================== GLOBAL STATE ====================
@@ -22,9 +22,8 @@ function typeSurahAsr() {
         if (index < fullText.length) {
             surahElement.innerHTML += fullText.charAt(index);
             index++;
-            setTimeout(typeNext, 50); // adjust speed (ms per character)
+            setTimeout(typeNext, 50);
         } else {
-            // Animation finished → hide preloader after a short delay
             setTimeout(hidePreloader, 500);
         }
     }
@@ -39,29 +38,44 @@ function hidePreloader() {
         setTimeout(() => {
             preloader.style.display = 'none';
             if (pageContent) pageContent.style.display = 'block';
-        }, 500); // match CSS transition time
+        }, 500);
     }
+}
+
+// ==================== LOADER ====================
+function showLoader() { 
+    const loader = document.getElementById('globalLoader');
+    if (loader) loader.style.display = 'flex'; 
+}
+function hideLoader() { 
+    const loader = document.getElementById('globalLoader');
+    if (loader) loader.style.display = 'none'; 
 }
 
 // ==================== API REQUEST ====================
 async function apiRequest(action, data = {}, user = null) {
-    const payload = { action, ...data };
-    if (user) payload.user = user;
+    showLoader();
+    try {
+        const payload = { action, ...data };
+        if (user) payload.user = user;
 
-    const formBody = new URLSearchParams();
-    formBody.append('payload', JSON.stringify(payload));
+        const formBody = new URLSearchParams();
+        formBody.append('payload', JSON.stringify(payload));
 
-    const response = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formBody.toString()
-    });
+        const response = await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formBody.toString()
+        });
 
-    const result = await response.json();
-    if (!result.success) {
-        throw new Error(result.error || 'Unknown error');
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error || 'Unknown error');
+        }
+        return result;
+    } finally {
+        hideLoader();
     }
-    return result;
 }
 
 function showModal(modalId) {
@@ -70,6 +84,11 @@ function showModal(modalId) {
 
 function hideModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
+}
+
+function showSuccessMessage(message) {
+    document.getElementById('successMessage').innerText = message;
+    document.getElementById('successModal').style.display = 'block';
 }
 
 function fileToBase64(file) {
@@ -114,11 +133,9 @@ function initSidebar() {
 
 // ==================== LOGIN & INIT ====================
 document.addEventListener('DOMContentLoaded', () => {
-    // Run Surah Al-Asr animation only on index.html
     if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
         typeSurahAsr();
     } else {
-        // If not index, hide preloader immediately (it won't exist on other pages anyway)
         hidePreloader();
     }
 
@@ -151,7 +168,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const span = loginModal.querySelector('.close');
         span.onclick = () => hideModal('loginModal');
         window.onclick = (event) => {
-            if (event.target == loginModal) hideModal('loginModal');
+            if (event.target.classList.contains('modal-overlay') || event.target.classList.contains('modal')) {
+                event.target.closest('.modal').style.display = 'none';
+            }
         };
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -197,7 +216,8 @@ async function initializeDashboard() {
 
     setupNavigation();
     showSection('membersSection');
-    loadMembers(1);
+    await loadDashboardStats();
+    await loadMembers(1);
     loadZonesForDropdowns();
     loadChart();
 }
@@ -207,6 +227,7 @@ function setupNavigation() {
         e.preventDefault();
         showSection('membersSection');
         loadMembers(1);
+        loadDashboardStats();
     });
 
     const navMasulin = document.getElementById('navMasulin');
@@ -261,12 +282,31 @@ function setupNavigation() {
             showSection('exportSection');
         });
     }
+
+    // New admin stats sections
+    const navZoneStats = document.getElementById('navZoneStats');
+    if (navZoneStats) {
+        navZoneStats.addEventListener('click', (e) => {
+            e.preventDefault();
+            showSection('zoneStatsSection');
+            loadZoneStats();
+        });
+    }
+    const navBranchStats = document.getElementById('navBranchStats');
+    if (navBranchStats) {
+        navBranchStats.addEventListener('click', (e) => {
+            e.preventDefault();
+            showSection('branchStatsSection');
+            loadBranchStats();
+        });
+    }
 }
 
 function showSection(sectionId) {
     const sections = [
         'membersSection', 'masulSection', 'zonesSection',
-        'branchesSection', 'auditSection', 'configSection', 'exportSection'
+        'branchesSection', 'auditSection', 'configSection', 'exportSection',
+        'zoneStatsSection', 'branchStatsSection'
     ];
     sections.forEach(id => {
         const el = document.getElementById(id);
@@ -282,7 +322,9 @@ function showSection(sectionId) {
         branchesSection: 'navBranches',
         auditSection: 'navAudit',
         configSection: 'navConfig',
-        exportSection: 'navExport'
+        exportSection: 'navExport',
+        zoneStatsSection: 'navZoneStats',
+        branchStatsSection: 'navBranchStats'
     };
     const navId = navMap[sectionId];
     if (navId) {
@@ -465,16 +507,19 @@ function printMember(intizarId) {
                 <head>
                     <title>Member Biodata</title>
                     <link rel="stylesheet" href="style.css">
+                    <style>
+                        @media print { body { margin: 1cm; } .print-header { text-align: center; } .print-photo { max-width: 150px; } }
+                    </style>
                 </head>
                 <body>${printContents}</body>
             </html>
         `);
         printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        printWindow.onafterprint = () => printWindow.close();
-        setTimeout(() => printWindow.close(), 1000);
-    }, 500);
+        printWindow.onload = () => {
+            printWindow.print();
+            printWindow.onafterprint = () => printWindow.close();
+        };
+    }, 100);
 }
 
 // ==================== VIEW MASUL ====================
@@ -544,22 +589,26 @@ function printMasul(intizarId) {
                 <head>
                     <title>Mas'ul Biodata</title>
                     <link rel="stylesheet" href="style.css">
+                    <style>
+                        @media print { body { margin: 1cm; } .print-header { text-align: center; } .print-photo { max-width: 150px; } }
+                    </style>
                 </head>
                 <body>${printContents}</body>
             </html>
         `);
         printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        printWindow.onafterprint = () => printWindow.close();
-        setTimeout(() => printWindow.close(), 1000);
-    }, 500);
+        printWindow.onload = () => {
+            printWindow.print();
+            printWindow.onafterprint = () => printWindow.close();
+        };
+    }, 100);
 }
 
 // ==================== REGISTRATION PAGE ====================
 function initializeRegistrationPage() {
     if (!currentUser) return;
     loadZonesForDropdowns();
+    setDOBLimits();   // Restrict DOB based on age requirements
 
     if (currentUser.role === 'Branch Mas\'ul') {
         const branchField = document.querySelector('select[name="branch"]');
@@ -639,6 +688,17 @@ function initializeRegistrationPage() {
             document.querySelector('input[name="intizarId"]').value = '';
         }
     });
+}
+
+// ==================== DATE OF BIRTH RESTRICTIONS ====================
+function setDOBLimits() {
+    const today = new Date();
+    const maxDateMember = new Date(today.getFullYear() - 7, today.getMonth(), today.getDate()).toISOString().split('T')[0];
+    const maxDateMasul = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate()).toISOString().split('T')[0];
+    const memberDob = document.getElementById('memberDob');
+    const masulDob = document.getElementById('masulDob');
+    if (memberDob) memberDob.setAttribute('max', maxDateMember);
+    if (masulDob) masulDob.setAttribute('max', maxDateMasul);
 }
 
 // ==================== ZONE/BRANCH DROPDOWNS ====================
@@ -981,65 +1041,105 @@ async function transferMasul(intizarId) {
     }
 }
 
-// ==================== CHART ====================
-async function loadChart() {
+// ==================== DASHBOARD STATS & CHARTS ====================
+async function loadDashboardStats() {
     try {
-        const result = await apiRequest('getMembers', { page: 1, pageSize: 99999 }, currentUser);
-        const members = result.members;
-        const levelCount = {
-            Bakiyatullah: 0,
-            Ansarullah: 0,
-            Ghalibun: 0,
-            'X-Ghalibun': 0
-        };
-        members.forEach(m => {
-            if (levelCount.hasOwnProperty(m.Level)) levelCount[m.Level]++;
-        });
-
-        const ctx = document.getElementById('membersChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: Object.keys(levelCount),
-                datasets: [{
-                    label: 'Number of Members',
-                    data: Object.values(levelCount),
-                    backgroundColor: ['#556B2F', '#FFD700', '#556B2F', '#000000']
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false }
-                }
-            }
-        });
+        const result = await apiRequest('getDashboardStats', {}, currentUser);
+        const stats = result.stats;
+        document.getElementById('statTotalMembers').innerText = stats.totalMembers;
+        document.getElementById('statBrothers').innerText = stats.brothers;
+        document.getElementById('statSisters').innerText = stats.sisters;
+        if (currentUser.role === 'Admin') {
+            document.getElementById('statMasuls').innerText = stats.totalMasuls;
+        }
+        updateMembersChart(stats.levelCounts);
     } catch (err) {
-        console.error(err);
+        console.error('Failed to load stats', err);
     }
 }
 
-/// ==================== CLOSE MODALS ====================
-/*document.querySelectorAll('.modal .close').forEach(span => {
-    span.onclick = function() {
-        this.closest('.modal').style.display = 'none';
-    };
-});
-window.onclick = function(event) {
-    if (event.target.classList.contains('modal')) {
-        event.target.style.display = 'none';
-    }
-};ugins: {
-                    legend: { display: false }
-                }
+function updateMembersChart(levelCounts) {
+    const ctx = document.getElementById('membersChart').getContext('2d');
+    if (window.membersChart) window.membersChart.destroy();
+    window.membersChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(levelCounts),
+            datasets: [{
+                label: 'Number of Members',
+                data: Object.values(levelCounts),
+                backgroundColor: ['#556B2F', '#FFD700', '#556B2F', '#000000']
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+}
+
+async function loadZoneStats() {
+    try {
+        const result = await apiRequest('getZoneStats', {}, currentUser);
+        const stats = result.stats;
+        const tbody = document.querySelector('#zoneStatsTable tbody');
+        tbody.innerHTML = '';
+        stats.forEach(zone => {
+            const row = tbody.insertRow();
+            row.insertCell().innerText = zone.zone;
+            row.insertCell().innerText = zone.total;
+            row.insertCell().innerText = zone.brothers;
+            row.insertCell().innerText = zone.sisters;
+        });
+        const ctx = document.getElementById('zoneChart').getContext('2d');
+        if (window.zoneChart) window.zoneChart.destroy();
+        window.zoneChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: stats.map(z => z.zone),
+                datasets: [{
+                    data: stats.map(z => z.total),
+                    backgroundColor: ['#556B2F', '#FFD700', '#2F4F2F', '#DAA520', '#6B8E23']
+                }]
             }
         });
     } catch (err) {
         console.error(err);
+        alert('Failed to load zone stats');
     }
-}*/
+}
 
-// ==================== CLOSE MODALS ====================
+async function loadBranchStats() {
+    try {
+        const result = await apiRequest('getBranchStats', {}, currentUser);
+        const stats = result.stats;
+        const tbody = document.querySelector('#branchStatsTable tbody');
+        tbody.innerHTML = '';
+        stats.forEach(b => {
+            const row = tbody.insertRow();
+            row.insertCell().innerText = b.branchCode;
+            row.insertCell().innerText = b.branchName;
+            row.insertCell().innerText = b.zone;
+            row.insertCell().innerText = b.total;
+            row.insertCell().innerText = b.brothers;
+            row.insertCell().innerText = b.sisters;
+        });
+        const ctx = document.getElementById('branchChart').getContext('2d');
+        if (window.branchChart) window.branchChart.destroy();
+        window.branchChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: stats.slice(0, 10).map(b => b.branchCode),
+                datasets: [{
+                    label: 'Members per Branch',
+                    data: stats.slice(0, 10).map(b => b.total),
+                    backgroundColor: '#556B2F'
+                }]
+            }
+        });
+    } catch (err) {
+        console.error(err);
+        alert('Failed to load branch stats');
+    }
+}
+
 // ==================== CLOSE MODALS ====================
 document.querySelectorAll('.modal .close').forEach(span => {
     span.onclick = function() {
@@ -1047,7 +1147,7 @@ document.querySelectorAll('.modal .close').forEach(span => {
     };
 });
 window.onclick = function(event) {
-    if (event.target.classList.contains('modal')) {
-        event.target.style.display = 'none';
+    if (event.target.classList.contains('modal-overlay') || event.target.classList.contains('modal')) {
+        event.target.closest('.modal').style.display = 'none';
     }
 };
